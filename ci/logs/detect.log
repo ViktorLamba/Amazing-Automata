@@ -103,3 +103,70 @@
 2025-09-26T18:40:36+03:00 Detected Go project in project/
 2025-09-26T18:40:37+03:00 Manifest written to manifest.json
 2025-09-26T18:40:37+03:00 Done.
+2025-09-26T19:50:40+03:00 Start detect-entry...
+2025-09-26T19:50:40+03:00 Found .deployrc — reading overrides
+2025-09-26T19:50:40+03:00 Dockerfile present but no ENTRYPOINT/CMD parsed
+2025-09-26T19:50:40+03:00 Detected Node.js project in ./
+2025-09-26T19:50:40+03:00 Detected Rust project in project/
+2025-09-26T19:50:40+03:00 Manifest written to manifest.json
+2025-09-26T19:50:40+03:00 Done.
+2025-09-26T19:51:17+03:00 Start detect-entry...
+2025-09-26T19:51:17+03:00 Found .deployrc — reading overrides
+2025-09-26T19:51:17+03:00 Dockerfile present but no ENTRYPOINT/CMD parsed
+2025-09-26T19:51:17+03:00 Detected Node.js project in ./
+2025-09-26T19:51:17+03:00 Detected Rust project in project/
+2025-09-26T19:51:17+03:00 Manifest written to manifest.json
+2025-09-26T19:51:17+03:00 Done.
+2025-09-26T19:52:19+03:00 Start detect-entry...
+2025-09-26T19:52:19+03:00 Found .deployrc — reading overrides
+2025-09-26T19:52:19+03:00 Dockerfile present but no ENTRYPOINT/CMD parsed
+2025-09-26T19:52:19+03:00 Detected Node.js project in ./
+2025-09-26T19:52:19+03:00 Detected Rust project in project/
+2025-09-26T19:52:19+03:00 Manifest written to manifest.json
+2025-09-26T19:52:19+03:00 Done.
+2025-09-26T19:52:39+03:00 Start detect-entry...
+2025-09-26T19:52:39+03:00 Found .deployrc — reading overrides
+2025-09-26T19:52:39+03:00 Dockerfile present but no ENTRYPOINT/CMD parsed
+2025-09-26T19:52:39+03:00 Detected Node.js project in ./
+2025-09-26T19:52:39+03:00 Detected Rust project in project/
+2025-09-26T19:52:39+03:00 Manifest written to manifest.json
+2025-09-26T19:52:39+03:00 Done.
+2025-09-26T19:54:49+03:00 Start detect-entry...
+2025-09-26T19:54:49+03:00 Found .deployrc — reading overrides
+2025-09-26T19:54:49+03:00 Dockerfile present but no ENTRYPOINT/CMD parsed
+2025-09-26T19:54:49+03:00 Detected Node.js project in ./
+2025-09-26T19:54:49+03:00 Detected Rust project in project/
+2025-09-26T19:54:49+03:00 Manifest written to manifest.json
+2025-09-26T19:54:49+03:00 Done.
+2025-09-26T19:58:09+03:00 Start detect-entry...
+2025-09-26T19:58:09+03:00 Found .deployrc — reading overrides
+2025-09-26T19:58:09+03:00 Dockerfile present but no ENTRYPOINT/CMD parsed
+2025-09-26T19:58:09+03:00 Detected Node.js project in ./
+2025-09-26T19:58:09+03:00 Set Rust entry to main.rs: project/src/main.rs
+2025-09-26T19:58:09+03:00 Detected Rust project in project/
+2025-09-26T19:58:09+03:00 Manifest written to manifest.json
+2025-09-26T19:58:09+03:00 Done.
+2025-09-26T20:00:41+03:00 Start detect-entry...
+2025-09-26T20:00:41+03:00 Found .deployrc — reading overrides
+2025-09-26T20:00:41+03:00 Dockerfile present but no ENTRYPOINT/CMD parsed
+2025-09-26T20:00:41+03:00 Detected Node.js project in ./
+2025-09-26T20:00:41+03:00 Set Rust entry to first .rs file: project/src/bin/hacktoberfest.rs
+2025-09-26T20:00:41+03:00 Detected Rust project in project/
+2025-09-26T20:00:41+03:00 Manifest written to manifest.json
+2025-09-26T20:00:41+03:00 Done.
+2025-09-26T20:02:52+03:00 Start detect-entry...
+2025-09-26T20:02:52+03:00 Found .deployrc — reading overrides
+2025-09-26T20:02:53+03:00 Dockerfile present but no ENTRYPOINT/CMD parsed
+2025-09-26T20:02:53+03:00 Detected Node.js project in ./
+2025-09-26T20:02:53+03:00 Set Rust entry to main.rs: project/main.rs
+2025-09-26T20:02:53+03:00 Detected Rust project in project/
+2025-09-26T20:02:53+03:00 Manifest written to manifest.json
+2025-09-26T20:02:53+03:00 Done.
+2025-09-26T20:03:13+03:00 Start detect-entry...
+2025-09-26T20:03:13+03:00 Found .deployrc — reading overrides
+2025-09-26T20:03:13+03:00 Dockerfile present but no ENTRYPOINT/CMD parsed
+2025-09-26T20:03:13+03:00 Detected Node.js project in ./
+2025-09-26T20:03:13+03:00 Set Rust entry to main.rs: project/src/bin/main.rs
+2025-09-26T20:03:13+03:00 Detected Rust project in project/
+2025-09-26T20:03:13+03:00 Manifest written to manifest.json
+2025-09-26T20:03:13+03:00 Done.

@@ -1,8 +1,8 @@
 {
   "language": "unknown",
   "build_tool": "unknown",
-  "entry": "src/main.py",
-  "start_cmd": "python src/main.py",
+  "entry": "",
+  "start_cmd": "",
   "build_cmd": "",
   "test_cmd": "",
   "has_dockerfile": false,

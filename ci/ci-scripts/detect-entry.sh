@@ -121,12 +121,34 @@ cargo_file=$(find_file_recursive "Cargo.toml")
 if [ -f "$cargo_file" ]; then
   language="rust"
   build_tool="cargo"
-  [ -z "$entry" ] && entry="$(dirname "$cargo_file")/src/main.rs"
-  build_cmd="cd $(dirname "$cargo_file") && cargo build --release"
-  test_cmd="cd $(dirname "$cargo_file") && cargo test"
-  start_cmd="cd $(dirname "$cargo_file") && cargo run"
+  
+  # Принудительно устанавливаем Rust entry, даже если он уже не пустой
+  project_dir=$(dirname "$cargo_file")
+  
+  # Ищем main.rs во всей папке проекта рекурсивно
+  main_rs_candidate=$(find "$project_dir" -name "main.rs" | head -n1 || true)
+  lib_rs_candidate=$(find "$project_dir" -name "lib.rs" | head -n1 || true)
+  any_rs_candidate=$(find "$project_dir" -name "*.rs" | head -n1 || true)
+  
+  if [ -n "$main_rs_candidate" ] && [ -f "$main_rs_candidate" ]; then
+    entry="$main_rs_candidate"
+    log "Set Rust entry to main.rs: $entry"
+  elif [ -n "$lib_rs_candidate" ] && [ -f "$lib_rs_candidate" ]; then
+    entry="$lib_rs_candidate"
+    log "Set Rust entry to lib.rs: $entry"
+  elif [ -n "$any_rs_candidate" ] && [ -f "$any_rs_candidate" ]; then
+    entry="$any_rs_candidate"
+    log "Set Rust entry to first .rs file: $entry"
+  else
+    log "Warning: No Rust source files found in $project_dir"
+    entry="$project_dir/src/main.rs"  # fallback path
+  fi
+  
+  build_cmd="cd $project_dir && cargo build --release"
+  test_cmd="cd $project_dir && cargo test"
+  start_cmd="cd $project_dir && cargo run"
   artifacts='["project/**/target/release/"]'
-  log "Detected Rust project in $(dirname "$cargo_file")/"
+  log "Detected Rust project in $project_dir/"
 fi
 
 # 8) Java
