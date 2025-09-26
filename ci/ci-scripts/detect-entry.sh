@@ -61,35 +61,6 @@ if [ -f "$PROJECT_DIR/Dockerfile" ]; then
   fi
 fi
 
-# 4) Node.js / TypeScript
-if [ "$language" = "unknown" ] && find_file_recursive "package.json" >/dev/null; then
-  pkg_json=$(find_file_recursive "package.json")
-  language="node"
-  build_tool="npm"
-  ts_file=$(find_file_recursive "tsconfig.json")
-  [ -n "$ts_file" ] && language="node"
-
-  if [ -z "$entry" ]; then
-    # ищем React/TS/Vite entry
-    for candidate in "src/index.tsx" "src/index.ts" "src/index.js" "index.js"; do
-      if [ -f "$PROJECT_DIR/$candidate" ]; then
-        entry="$PROJECT_DIR/$candidate"
-        break
-      fi
-    done
-    # fallback на main из package.json
-    if [ -z "$entry" ]; then
-      main_field=$(jq -r '.main // empty' "$pkg_json" 2>/dev/null)
-      [ -n "$main_field" ] && entry="$(dirname "$pkg_json")/$main_field"
-    fi
-  fi
-
-  build_cmd="cd $(dirname "$pkg_json") && npm run build || true"
-  start_cmd="cd $(dirname "$pkg_json") && npm run start || true"
-  test_cmd="cd $(dirname "$pkg_json") && npm run test || true"
-  artifacts='["project/**/dist/"]'
-  log "Detected Node.js / TypeScript project in $(dirname "$pkg_json")/"
-fi
 
 # 5) Python
 pyproject_file=$(find_file_recursive "pyproject.toml")
@@ -276,6 +247,7 @@ if [ -f "$cmake_file" ] || [ -f "$makefile_file" ]; then
   artifacts='["project/**/build/","project/**/bin/","project/**/*.exe"]'
   log "Detected C++ project in $project_dir/"
 fi
+
 
 # 10) fallback entry
 if [ -z "$entry" ]; then
