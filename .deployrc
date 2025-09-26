@@ -1,0 +1,8 @@
+{
+    "language": "unknown",
+    "entry": "src/main.py",
+    "build_cmd": "",
+    "start_cmd": "python src/main.py",
+    "artifacts": []
+  }
+  
