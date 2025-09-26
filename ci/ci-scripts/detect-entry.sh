@@ -66,8 +66,7 @@ fi
 
 # 5) Python
 if [ -f pyproject.toml ] || [ -f requirements.txt ] || \
-   ls *.py >/dev/null 2>&1 || \
-   { [ -d "project" ] && ls project/*.py >/dev/null 2>&1; }; then
+   { [ -d "project" ] && [ -n "$(find project -name "*.py" | head -n1)" ]; }; then
   language="python"
   build_tool="pip"
   if [ -f main.py ] && [ -z "$entry" ]; then entry="main.py"; fi
