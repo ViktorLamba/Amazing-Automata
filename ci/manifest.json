@@ -2,7 +2,11 @@
   "language": "unknown",
   "build_tool": "unknown",
   "entry": "",
-  "has_dockerfile": false,
+  "start_cmd": "",
+  "build_cmd": "",
+  "test_cmd": "",
+  "has_dockerfile": true,
   "is_mobile": false,
-  "artifacts": []
+  "artifacts": [],
+  "targets": ["linux/amd64"]
 }
