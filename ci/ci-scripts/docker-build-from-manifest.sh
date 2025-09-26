@@ -49,11 +49,11 @@ else
 EOF
 
   case "$LANGUAGE" in
-    go)
-      cat >> "$DOCKERFILE_PATH" <<'EOF'
+      go)
+cat >> "$DOCKERFILE_PATH" <<EOF
 FROM golang:1.20-alpine AS build
 WORKDIR /src
-COPY . .
+COPY project/test/ .
 RUN apk add --no-cache build-base git && \
     go mod download && \
     CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -o /out/app ./...
@@ -65,6 +65,7 @@ USER appuser
 ENTRYPOINT ["/usr/local/bin/app"]
 EOF
       ;;
+
     python)
       cat >> "$DOCKERFILE_PATH" <<'EOF'
 FROM python:3.11-slim AS build
@@ -111,19 +112,36 @@ CMD ["java", "-jar", "/app/app.jar"]
 EOF
       ;;
     rust)
-      cat >> "$DOCKERFILE_PATH" <<'EOF'
+  cat >> "$DOCKERFILE_PATH" <<'EOF'
+# --- Stage 1: Builder ---
 FROM rust:1.72 AS builder
 WORKDIR /usr/src/app
-COPY Cargo.toml Cargo.lock . || true
-RUN mkdir src && echo "fn main(){}" > src/main.rs
-RUN cargo build --release || true
-COPY . .
-RUN cargo build --release
+
+# Копируем весь проект
+COPY project/test/ .
+
+# Кэширование зависимостей
+RUN if [ -f Cargo.toml ]; then \
+        cargo fetch; \
+    fi
+
+# Сборка проекта
+RUN if [ -f Cargo.toml ]; then \
+        cargo build --release || cargo build; \
+    fi
+
+# --- Stage 2: Runtime ---
 FROM debian:bookworm-slim
-COPY --from=builder /usr/src/app/target/release/* /usr/local/bin/
-CMD ["sh", "-c", "/usr/local/bin/$(basename ${ENTRY} .rs)"]
+WORKDIR /usr/local/bin
+
+# Копируем бинарники, если они существуют
+COPY --from=builder /usr/src/app/target/release/ .
+
+# Точка входа
+CMD ["sh", "-c", "./$(basename project/test/src/main.rs .rs)"]
 EOF
       ;;
+
     dotnet)
       cat >> "$DOCKERFILE_PATH" <<'EOF'
 FROM mcr.microsoft.com/dotnet/sdk:7.0 AS build
@@ -274,7 +292,7 @@ else
 fi
 
 # Удаляем временный Dockerfile, если генерили
-if [ "$DOCKERFILE_PATH" = "$PROJECT_DIR/Dockerfile.ci" ]; then
+if [ "$DOCKERFILE_PATH" = "$PROJECT_coDIR/Dockerfile.ci" ]; then
   rm -f "$DOCKERFILE_PATH"
 fi
 
