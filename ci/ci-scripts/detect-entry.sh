@@ -61,59 +61,96 @@ if [ -f "$PROJECT_DIR/Dockerfile" ]; then
   fi
 fi
 
-# 4) Node.js
-if find_file_recursive "package.json" >/dev/null; then
+# 4) Node.js / TypeScript
+if [ "$language" = "unknown" ] && find_file_recursive "package.json" >/dev/null; then
   pkg_json=$(find_file_recursive "package.json")
   language="node"
   build_tool="npm"
   ts_file=$(find_file_recursive "tsconfig.json")
-  [ -n "$ts_file" ] && language="typescript"
+  [ -n "$ts_file" ] && language="node"
 
   if [ -z "$entry" ]; then
-    main_field=$(jq -r '.main // empty' "$pkg_json" 2>/dev/null)
-    [ -n "$main_field" ] && entry="$(dirname "$pkg_json")/$main_field"
+    # ищем React/TS/Vite entry
+    for candidate in "src/index.tsx" "src/index.ts" "src/index.js" "index.js"; do
+      if [ -f "$PROJECT_DIR/$candidate" ]; then
+        entry="$PROJECT_DIR/$candidate"
+        break
+      fi
+    done
+    # fallback на main из package.json
+    if [ -z "$entry" ]; then
+      main_field=$(jq -r '.main // empty' "$pkg_json" 2>/dev/null)
+      [ -n "$main_field" ] && entry="$(dirname "$pkg_json")/$main_field"
+    fi
   fi
 
   build_cmd="cd $(dirname "$pkg_json") && npm run build || true"
   start_cmd="cd $(dirname "$pkg_json") && npm run start || true"
   test_cmd="cd $(dirname "$pkg_json") && npm run test || true"
   artifacts='["project/**/dist/"]'
-  log "Detected Node.js project in $(dirname "$pkg_json")/"
+  log "Detected Node.js / TypeScript project in $(dirname "$pkg_json")/"
 fi
 
 # 5) Python
+pyproject_file=$(find_file_recursive "pyproject.toml")
+requirements_file=$(find_file_recursive "requirements.txt")
 py_file=$(find "$PROJECT_DIR" -type f -name "*.py" | head -n1 || true)
-if [ -f "$(find_file_recursive "pyproject.toml")" ] || [ -f "$(find_file_recursive "requirements.txt")" ] || [ -n "$py_file" ]; then
+
+if [ -f "$pyproject_file" ] || [ -f "$requirements_file" ] || [ -n "$py_file" ]; then
   language="python"
   build_tool="pip"
 
-  if [ -z "$entry" ]; then
-    entry_candidate=$(find_file_recursive "main.py")
-    [ -n "$entry_candidate" ] && entry="$entry_candidate"
-  fi
-  if [ -z "$entry" ] && [ -n "$py_file" ]; then
-    entry="$py_file"
+  # Определяем корневую папку Python проекта
+  if [ -f "$pyproject_file" ]; then
+    project_dir=$(dirname "$pyproject_file")
+  elif [ -f "$requirements_file" ]; then
+    project_dir=$(dirname "$requirements_file")
+  else
+    project_dir=$(dirname "$py_file")
   fi
 
-  build_cmd="pip install -r $(find_file_recursive "requirements.txt") || true"
-  test_cmd="pytest $PROJECT_DIR || true"
-  start_cmd="python $entry"
+  # Принудительно устанавливаем Python entry
+  main_py_candidate=$(find "$project_dir" -name "main.py" | head -n1 || true)
+  any_py_candidate=$(find "$project_dir" -name "*.py" | head -n1 || true)
+
+  if [ -n "$main_py_candidate" ] && [ -f "$main_py_candidate" ]; then
+    entry="$main_py_candidate"
+    log "Set Python entry to main.py: $entry"
+  elif [ -n "$any_py_candidate" ] && [ -f "$any_py_candidate" ]; then
+    entry="$any_py_candidate"
+    log "Set Python entry to first .py file: $entry"
+  else
+    log "Warning: No Python source files found in $project_dir"
+    entry="$project_dir/main.py"  # fallback path
+  fi
+
+  # Обновляем команды с правильным путём
+  if [ -f "$requirements_file" ]; then
+    build_cmd="cd $project_dir && pip install -r requirements.txt || true"
+  else
+    build_cmd="cd $project_dir && pip install . || true"
+  fi
+  
+  test_cmd="cd $project_dir && pytest . || true"
+  start_cmd="cd $project_dir && python $(basename "$entry")"
   artifacts='["project/**/.venv/","project/**/dist/"]'
-  log "Detected Python project in $PROJECT_DIR/"
+  log "Detected Python project in $project_dir/"
 fi
 
 # 6) Go
-go_file=$(find "$PROJECT_DIR" -type f -name "*.go" | head -n1 || true)
-if [ -n "$go_file" ]; then
-  language="go"
-  build_tool="go"
-  mainfile=$(find "$PROJECT_DIR" -type f -name "*.go" -exec grep -l "func main" {} + | head -n1)
-  [ -n "$mainfile" ] && entry="$mainfile"
-  build_cmd="cd $PROJECT_DIR && go build ./..."
-  test_cmd="cd $PROJECT_DIR && go test ./..."
-  start_cmd="go run $entry"
-  artifacts='["project/**/bin/"]'
-  log "Detected Go project in $PROJECT_DIR/"
+if [ "$language" = "unknown" ]; then
+  go_file=$(find "$PROJECT_DIR" -type f -name "*.go" | head -n1 || true)
+  if [ -n "$go_file" ]; then
+    language="go"
+    build_tool="go"
+    mainfile=$(find "$PROJECT_DIR" -type f -name "*.go" -exec grep -l "func main" {} + | head -n1)
+    [ -n "$mainfile" ] && entry="$mainfile"
+    build_cmd="cd $PROJECT_DIR && go build ./..."
+    test_cmd="cd $PROJECT_DIR && go test ./..."
+    start_cmd="go run $entry"
+    artifacts='["project/**/bin/"]'
+    log "Detected Go project in $PROJECT_DIR/"
+  fi
 fi
 
 # 7) Rust
@@ -121,56 +158,82 @@ cargo_file=$(find_file_recursive "Cargo.toml")
 if [ -f "$cargo_file" ]; then
   language="rust"
   build_tool="cargo"
-  [ -z "$entry" ] && entry="$(dirname "$cargo_file")/src/main.rs"
-  build_cmd="cd $(dirname "$cargo_file") && cargo build --release"
-  test_cmd="cd $(dirname "$cargo_file") && cargo test"
-  start_cmd="cd $(dirname "$cargo_file") && cargo run"
+  
+  # Принудительно устанавливаем Rust entry, даже если он уже не пустой
+  project_dir=$(dirname "$cargo_file")
+  
+  # Ищем main.rs во всей папке проекта рекурсивно
+  main_rs_candidate=$(find "$project_dir" -name "main.rs" | head -n1 || true)
+  lib_rs_candidate=$(find "$project_dir" -name "lib.rs" | head -n1 || true)
+  any_rs_candidate=$(find "$project_dir" -name "*.rs" | head -n1 || true)
+  
+  if [ -n "$main_rs_candidate" ] && [ -f "$main_rs_candidate" ]; then
+    entry="$main_rs_candidate"
+    log "Set Rust entry to main.rs: $entry"
+  elif [ -n "$lib_rs_candidate" ] && [ -f "$lib_rs_candidate" ]; then
+    entry="$lib_rs_candidate"
+    log "Set Rust entry to lib.rs: $entry"
+  elif [ -n "$any_rs_candidate" ] && [ -f "$any_rs_candidate" ]; then
+    entry="$any_rs_candidate"
+    log "Set Rust entry to first .rs file: $entry"
+  else
+    log "Warning: No Rust source files found in $project_dir"
+    entry="$project_dir/src/main.rs"  # fallback path
+  fi
+  
+  build_cmd="cd $project_dir && cargo build --release"
+  test_cmd="cd $project_dir && cargo test"
+  start_cmd="cd $project_dir && cargo run"
   artifacts='["project/**/target/release/"]'
-  log "Detected Rust project in $(dirname "$cargo_file")/"
+  log "Detected Rust project in $project_dir/"
 fi
 
 # 8) Java
-pom_file=$(find_file_recursive "pom.xml")
-gradle_file=$(find_file_recursive "build.gradle") || gradle_file=$(find_file_recursive "build.gradle.kts")
-if [ -f "$pom_file" ]; then
-  language="java"
-  build_tool="maven"
-  [ -z "$entry" ] && entry="$(dirname "$pom_file")/src/main/java"
-  build_cmd="cd $(dirname "$pom_file") && mvn -B package"
-  test_cmd="cd $(dirname "$pom_file") && mvn test"
-  start_cmd="cd $(dirname "$pom_file") && java -jar target/*.jar"
-  artifacts='["project/**/target/*.jar"]'
-  log "Detected Java (Maven) project in $(dirname "$pom_file")/"
-elif [ -f "$gradle_file" ]; then
-  language="java"
-  build_tool="gradle"
-  [ -z "$entry" ] && entry="$(dirname "$gradle_file")/src/main/java"
-  build_cmd="cd $(dirname "$gradle_file") && ./gradlew build || gradle build"
-  test_cmd="cd $(dirname "$gradle_file") && ./gradlew test || gradle test"
-  start_cmd="cd $(dirname "$gradle_file") && java -jar build/libs/*.jar"
-  artifacts='["project/**/build/libs/*.jar"]'
-  log "Detected Java (Gradle) project in $(dirname "$gradle_file")/"
+if [ "$language" = "unknown" ]; then
+  pom_file=$(find_file_recursive "pom.xml")
+  gradle_file=$(find_file_recursive "build.gradle") || gradle_file=$(find_file_recursive "build.gradle.kts")
+  if [ -f "$pom_file" ]; then
+    language="java"
+    build_tool="maven"
+    [ -z "$entry" ] && entry="$(dirname "$pom_file")/src/main/java"
+    build_cmd="cd $(dirname "$pom_file") && mvn -B package"
+    test_cmd="cd $(dirname "$pom_file") && mvn test"
+    start_cmd="cd $(dirname "$pom_file") && java -jar target/*.jar"
+    artifacts='["project/**/target/*.jar"]'
+    log "Detected Java (Maven) project in $(dirname "$pom_file")/"
+  elif [ -f "$gradle_file" ]; then
+    language="java"
+    build_tool="gradle"
+    [ -z "$entry" ] && entry="$(dirname "$gradle_file")/src/main/java"
+    build_cmd="cd $(dirname "$gradle_file") && ./gradlew build || gradle build"
+    test_cmd="cd $(dirname "$gradle_file") && ./gradlew test || gradle test"
+    start_cmd="cd $(dirname "$gradle_file") && java -jar build/libs/*.jar"
+    artifacts='["project/**/build/libs/*.jar"]'
+    log "Detected Java (Gradle) project in $(dirname "$gradle_file")/"
+  fi
 fi
 
 # 9) .NET
-csproj_file=$(find "$PROJECT_DIR" -type f -name "*.csproj" | head -n1)
-if [ -f "$csproj_file" ]; then
-  language="dotnet"
-  build_tool="dotnet"
-  [ -z "$entry" ] && entry="$csproj_file"
-  build_cmd="cd $(dirname "$csproj_file") && dotnet build"
-  test_cmd="cd $(dirname "$csproj_file") && dotnet test"
-  start_cmd="cd $(dirname "$csproj_file") && dotnet run"
-  artifacts='["project/**/bin/Release/"]'
-  log "Detected .NET project in $(dirname "$csproj_file")/"
+if [ "$language" = "unknown" ]; then
+  csproj_file=$(find "$PROJECT_DIR" -type f -name "*.csproj" | head -n1)
+  if [ -f "$csproj_file" ]; then
+    language="dotnet"
+    build_tool="dotnet"
+    [ -z "$entry" ] && entry="$csproj_file"
+    build_cmd="cd $(dirname "$csproj_file") && dotnet build"
+    test_cmd="cd $(dirname "$csproj_file") && dotnet test"
+    start_cmd="cd $(dirname "$csproj_file") && dotnet run"
+    artifacts='["project/**/bin/Release/"]'
+    log "Detected .NET project in $(dirname "$csproj_file")/"
+  fi
 fi
 
-# 10) fallback filename patterns
+# 10) fallback entry
 if [ -z "$entry" ]; then
-  for f in "$PROJECT_DIR"/main.py "$PROJECT_DIR"/app.py "$PROJECT_DIR"/wsgi.py \
-           "$PROJECT_DIR"/index.js "$PROJECT_DIR"/server.js "$PROJECT_DIR"/app.js \
-           "$PROJECT_DIR"/src/index.js "$PROJECT_DIR"/src/main.rs \
-           "$PROJECT_DIR"/*.go; do
+  for f in "$PROJECT_DIR/main.py" "$PROJECT_DIR/app.py" "$PROJECT_DIR/wsgi.py" \
+           "$PROJECT_DIR/index.js" "$PROJECT_DIR/server.js" "$PROJECT_DIR/app.js" \
+           "$PROJECT_DIR/src/index.js" "$PROJECT_DIR/src/main.ts" "$PROJECT_DIR/src/main.tsx" \
+           "$PROJECT_DIR/src/main.rs" "$PROJECT_DIR"/*.go; do
     if [ -f "$f" ]; then
       entry="$f"
       log "Fallback file found -> $entry"
@@ -182,12 +245,12 @@ fi
 # 11) final fallback start_cmd
 if [ -z "$start_cmd" ] && [ -n "$entry" ]; then
   case "$entry" in
-    project/*.py) start_cmd="python $entry" ;;
-    project/*.js) start_cmd="node $entry" ;;
-    project/*.ts) start_cmd="cd project && npm run build && node dist/$(basename "$entry" .ts).js" ;;
-    project/*.go) start_cmd="go run $entry" ;;
-    project/*.rs) start_cmd="cd project && cargo run" ;;
-    project/*.jar) start_cmd="java -jar $entry" ;;
+    *.py) start_cmd="python $entry" ;;
+    *.js) start_cmd="node $entry" ;;
+    *.ts|*.tsx) start_cmd="cd $PROJECT_DIR && npm run build && node dist/$(basename "$entry" .ts).js" ;;
+    *.go) start_cmd="go run $entry" ;;
+    *.rs) start_cmd="cd $PROJECT_DIR && cargo run" ;;
+    *.jar) start_cmd="java -jar $entry" ;;
     *) start_cmd="" ;;
   esac
   log "Guessed start_cmd='$start_cmd'"
