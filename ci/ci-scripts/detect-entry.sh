@@ -48,7 +48,7 @@ if [ -f Procfile ] && [ -z "$start_cmd" ]; then
 fi
 
 # 3) Dockerfile
-if [ -f "$PROJECT_DIR/Dockerfile" ] || [ -f Dockerfile ]; then
+if [ -f "$PROJECT_DIR/Dockerfile" ]; then
   has_dockerfile=true
   dockerfile="${PROJECT_DIR}/Dockerfile"
   [ -f Dockerfile ] && dockerfile="Dockerfile"
