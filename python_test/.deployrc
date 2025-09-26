@@ -1,8 +1,0 @@
-{
-  "language": "python",
-  "entry": "src/main.py",
-  "build_cmd": "pip install -r requirements.txt",
-  "start_cmd": "python src/main.py",
-  "test_cmd": "pytest tests",
-  "artifacts": ["dist/", ".venv/"]
-}
