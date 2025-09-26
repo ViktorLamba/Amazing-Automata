@@ -423,6 +423,90 @@
 2025-09-26T21:20:22+03:00 Detected Node.js / TypeScript project in ./
 2025-09-26T21:20:22+03:00 Manifest written to manifest.json
 2025-09-26T21:20:22+03:00 Done.
+2025-09-26T21:40:36+03:00 Start detect-entry...
+2025-09-26T21:40:36+03:00 Found .deployrc — reading overrides
+2025-09-26T21:40:36+03:00 Detected Node.js / TypeScript project in ./
+2025-09-26T21:40:36+03:00 Set Python entry to main.py: project/FastAPI-Stack-Pet-Project/backend/app/app/main.py
+2025-09-26T21:40:36+03:00 Detected Python project in project/FastAPI-Stack-Pet-Project/backend/app/
+2025-09-26T21:40:36+03:00 Manifest written to manifest.json
+2025-09-26T21:40:36+03:00 Done.
+2025-09-26T21:41:14+03:00 Start detect-entry...
+2025-09-26T21:41:14+03:00 Found .deployrc — reading overrides
+2025-09-26T21:41:14+03:00 Detected Node.js / TypeScript project in ./
+2025-09-26T21:41:14+03:00 Set Python entry to main.py: project/FastAPI-Stack-Pet-Project/backend/app/app/main.py
+2025-09-26T21:41:14+03:00 Detected Python project in project/FastAPI-Stack-Pet-Project/backend/app/
+2025-09-26T21:41:14+03:00 Manifest written to manifest.json
+2025-09-26T21:41:14+03:00 Done.
+2025-09-26T22:04:20+03:00 Start detect-entry...
+2025-09-26T22:04:20+03:00 Found .deployrc — reading overrides
+2025-09-26T22:04:20+03:00 Detected Node.js / TypeScript project in ./
+2025-09-26T22:04:20+03:00 Set Python entry to main.py: project/FastAPI-Stack-Pet-Project/backend/app/app/main.py
+2025-09-26T22:04:20+03:00 Detected Python project in project/FastAPI-Stack-Pet-Project/backend/app/
+2025-09-26T22:04:20+03:00 Manifest written to manifest.json
+2025-09-26T22:04:20+03:00 Done.
+2025-09-26T22:04:51+03:00 Start detect-entry...
+2025-09-26T22:04:51+03:00 Found .deployrc — reading overrides
+2025-09-26T22:04:51+03:00 Detected Node.js / TypeScript project in ./
+2025-09-26T22:04:51+03:00 Set Python entry to main.py: project/FastAPI-Stack-Pet-Project/backend/app/app/main.py
+2025-09-26T22:04:51+03:00 Detected Python project in project/FastAPI-Stack-Pet-Project/backend/app/
+2025-09-26T22:04:51+03:00 Manifest written to manifest.json
+2025-09-26T22:04:51+03:00 Done.
+2025-09-26T22:05:43+03:00 Start detect-entry...
+2025-09-26T22:05:43+03:00 Found .deployrc — reading overrides
+2025-09-26T22:05:43+03:00 Detected Node.js / TypeScript project in ./
+2025-09-26T22:05:43+03:00 Set Python entry to main.py: project/FastAPI-Stack-Pet-Project/backend/app/app/main.py
+2025-09-26T22:05:43+03:00 Detected Python project in project/FastAPI-Stack-Pet-Project/backend/app/
+2025-09-26T22:05:44+03:00 Manifest written to manifest.json
+2025-09-26T22:05:44+03:00 Done.
+2025-09-26T22:07:12+03:00 Start detect-entry...
+2025-09-26T22:07:12+03:00 Found .deployrc — reading overrides
+2025-09-26T22:07:12+03:00 Detected Node.js / TypeScript project in ./
+2025-09-26T22:07:12+03:00 Set Python entry to main.py: project/FastAPI-Stack-Pet-Project/backend/app/app/main.py
+2025-09-26T22:07:12+03:00 Detected Python project in project/FastAPI-Stack-Pet-Project/backend/app/
+2025-09-26T22:07:12+03:00 Manifest written to manifest.json
+2025-09-26T22:07:12+03:00 Done.
+2025-09-26T22:58:34+03:00 Start detect-entry...
+2025-09-26T22:58:34+03:00 Found .deployrc — reading overrides
+2025-09-26T22:58:34+03:00 Detected Node.js / TypeScript project in ./
+2025-09-26T22:58:34+03:00 Set Python entry to main.py: project/FastAPI-Stack-Pet-Project/backend/app/app/main.py
+2025-09-26T22:58:34+03:00 Detected Python project in project/FastAPI-Stack-Pet-Project/backend/app/
+2025-09-26T22:58:34+03:00 Manifest written to manifest.json
+2025-09-26T22:58:34+03:00 Done.
+2025-09-26T23:12:36+03:00 Start detect-entry...
+2025-09-26T23:12:36+03:00 Found .deployrc — reading overrides
+2025-09-26T23:12:36+03:00 Detected Node.js / TypeScript project in ./
+2025-09-26T23:12:36+03:00 Set Python entry to main.py: project/FastAPI-Stack-Pet-Project/backend/app/app/main.py
+2025-09-26T23:12:36+03:00 Detected Python project in project/FastAPI-Stack-Pet-Project/backend/app/
+2025-09-26T23:12:36+03:00 Manifest written to manifest.json
+2025-09-26T23:12:36+03:00 Done.
+2025-09-26T23:15:08+03:00 Start detect-entry...
+2025-09-26T23:15:08+03:00 Found .deployrc — reading overrides
+2025-09-26T23:15:08+03:00 Detected Node.js / TypeScript project in ./
+2025-09-26T23:15:08+03:00 Set Python entry to first .py file: project/Python/networking_flow/minimum_cut.py
+2025-09-26T23:15:08+03:00 Detected Python project in project/Python/
+2025-09-26T23:15:08+03:00 Manifest written to manifest.json
+2025-09-26T23:15:08+03:00 Done.
+2025-09-26T23:31:46+03:00 Start detect-entry...
+2025-09-26T23:31:46+03:00 Found .deployrc — reading overrides
+2025-09-26T23:31:46+03:00 Detected Node.js / TypeScript project in ./
+2025-09-26T23:31:46+03:00 Set C++ entry to main.cpp: project/test/src/main.cpp
+2025-09-26T23:31:46+03:00 Detected C++ project in project/test/
+2025-09-26T23:31:46+03:00 Manifest written to manifest.json
+2025-09-26T23:31:46+03:00 Done.
+2025-09-26T23:37:24+03:00 Start detect-entry...
+2025-09-26T23:37:24+03:00 Found .deployrc — reading overrides
+2025-09-26T23:37:25+03:00 Detected Node.js / TypeScript project in ./
+2025-09-26T23:37:25+03:00 Set C++ entry to main.cpp: project/test/src/main.cpp
+2025-09-26T23:37:25+03:00 Detected C++ project in project/test/
+2025-09-26T23:37:25+03:00 Manifest written to manifest.json
+2025-09-26T23:37:25+03:00 Done.
+2025-09-26T23:43:14+03:00 Start detect-entry...
+2025-09-26T23:43:14+03:00 Found .deployrc — reading overrides
+2025-09-26T23:43:14+03:00 Detected Node.js / TypeScript project in ./
+2025-09-26T23:43:14+03:00 Set C++ entry to main.cpp: project/test/src/main.cpp
+2025-09-26T23:43:14+03:00 Detected C++ project in project/test/
+2025-09-26T23:43:14+03:00 Manifest written to manifest.json
+2025-09-26T23:43:14+03:00 Done.
 2025-09-26T21:39:49+03:00 Start detect-entry...
 2025-09-26T21:39:49+03:00 Found .deployrc — reading overrides
 2025-09-26T21:39:49+03:00 Set C++ entry to main.cpp: project/main.cpp
