@@ -130,13 +130,78 @@ FROM mcr.microsoft.com/dotnet/sdk:7.0 AS build
 WORKDIR /src
 COPY *.csproj . || true
 RUN dotnet restore || true
-COPY . .
+COPY . . 
 RUN dotnet publish -c Release -o /app || true
 
 FROM mcr.microsoft.com/dotnet/aspnet:7.0
 WORKDIR /app
 COPY --from=build /app .
 ENTRYPOINT ["dotnet", "YourApp.dll"]
+EOF
+      ;;
+    cpp)
+      cat >> "$DOCKERFILE_PATH" <<'EOF'
+# Build stage for C++ (CMake)
+FROM ubuntu:24.04 AS builder
+ENV DEBIAN_FRONTEND=noninteractive
+WORKDIR /src
+
+# install build deps
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    build-essential cmake git pkg-config ca-certificates && \
+    rm -rf /var/lib/apt/lists/*
+
+COPY . .
+
+# ensure possible dirs exist so COPY from builder won't fail
+RUN mkdir -p build example bench
+
+# (Optional) try to compile an explicit provided .cpp later (generator may insert a compile step)
+# configure & build (attempt; don't fail whole build if project has no executable)
+RUN mkdir -p build && cd build && cmake .. && make -j$(nproc) || true
+
+# runtime stage
+FROM ubuntu:24.04 AS runtime
+WORKDIR /app
+
+# create non-root user
+RUN adduser --disabled-password --gecos "" appuser || true
+
+# prepare runtime bin dir
+RUN mkdir -p /usr/local/bin
+
+# copy potential build outputs from builder (directories guaranteed to exist)
+COPY --from=builder /src/build /tmp/build
+COPY --from=builder /src/example /tmp/example
+COPY --from=builder /src/bench /tmp/bench
+
+# find executables and copy them into /usr/local/bin
+RUN set -eux; \
+    for d in /tmp/build /tmp/example /tmp/bench; do \
+      if [ -d "$d" ]; then \
+        find "$d" -type f -executable -exec cp {} /usr/local/bin/ \; || true; \
+      fi; \
+    done; \
+    ls -la /usr/local/bin || true
+
+# create entrypoint script
+RUN cat > /usr/local/bin/ci-entrypoint.sh <<'SH'
+#!/bin/sh
+set -e
+if [ -n "${ENTRY}" ]; then
+  exec sh -c "${ENTRY}"
+fi
+BIN=$(ls /usr/local/bin | head -n1 || true)
+if [ -n "$BIN" ]; then
+  exec /usr/local/bin/"$BIN"
+else
+  echo "No executable found in image"
+  sleep infinity
+fi
+SH
+RUN chmod +x /usr/local/bin/ci-entrypoint.sh
+
+CMD ["/usr/local/bin/ci-entrypoint.sh"]
 EOF
       ;;
     *)
@@ -151,8 +216,33 @@ EOF
   esac
 
   # --- подставляем ENTRY ---
-  ENTRY_REL="${ENTRY#$PROJECT_DIR/}"   # убираем project/
+  ENTRY_REL="${ENTRY#$PROJECT_DIR/}"   # убираем префикс project/ (если есть)
   echo "ℹ️ ENTRY_REL resolved to: $ENTRY_REL"
+
+  # Если ENTRY указывает на исходник .cpp — вставим команду компиляции в builder перед configure (через sed)
+  if [ -n "$ENTRY_REL" ] && printf '%s' "$ENTRY_REL" | grep -qE '\.cpp$'; then
+    echo "ℹ️ Detected .cpp entry -> will compile it in builder and use /usr/local/bin/ci_entry as runtime entry"
+    # вставим строку после строки "# ensure possible dirs exist so COPY from builder won't fail"
+    # добавим команду: RUN mkdir -p build && g++ -std=c++17 "<ENTRY_REL>" -o build/ci_entry || true
+    # в Dockerfile, заменяем маркер ${ENTRY} позже на /usr/local/bin/ci_entry
+    # используем sed с учётом платформы
+    compile_cmd="RUN mkdir -p build && g++ -std=c++17 \"$ENTRY_REL\" -o build/ci_entry || true"
+    if sed --version >/dev/null 2>&1; then
+      # GNU sed
+      sed -i "/# ensure possible dirs exist so COPY from builder won't fail/a $compile_cmd" "$DOCKERFILE_PATH"
+    else
+      # BSD/mac sed (rare on CI but included for portability)
+      sed -i '' "/# ensure possible dirs exist so COPY from builder won't fail/a\\
+$compile_cmd
+" "$DOCKERFILE_PATH"
+    fi
+
+    # В рантайме мы копируем /src/build -> /tmp/build и затем cp в /usr/local/bin.
+    # поэтому укажем ENTRY_rel как /usr/local/bin/ci_entry
+    ENTRY_REL="/usr/local/bin/ci_entry"
+  fi
+
+  # Подставляем ENTRY_REL в Dockerfile
   if [ -n "$ENTRY_REL" ]; then
     if sed --version >/dev/null 2>&1; then
       sed -i "s|\${ENTRY}|$ENTRY_REL|g" "$DOCKERFILE_PATH"
