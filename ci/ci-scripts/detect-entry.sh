@@ -138,20 +138,41 @@ if [ -f "$pyproject_file" ] || [ -f "$requirements_file" ] || [ -n "$py_file" ];
 fi
 
 # 6) Go
-if [ "$language" = "unknown" ]; then
-  go_file=$(find "$PROJECT_DIR" -type f -name "*.go" | head -n1 || true)
-  if [ -n "$go_file" ]; then
-    language="go"
-    build_tool="go"
-    mainfile=$(find "$PROJECT_DIR" -type f -name "*.go" -exec grep -l "func main" {} + | head -n1)
-    [ -n "$mainfile" ] && entry="$mainfile"
-    build_cmd="cd $PROJECT_DIR && go build ./..."
-    test_cmd="cd $PROJECT_DIR && go test ./..."
-    start_cmd="go run $entry"
-    artifacts='["project/**/bin/"]'
-    log "Detected Go project in $PROJECT_DIR/"
+go_mod_file=$(find "$PROJECT_DIR" -type f -name "go.mod" | head -n1 || true)
+main_go_file=$(find "$PROJECT_DIR" -type f -name "main.go" | head -n1 || true)
+any_go_file=$(find "$PROJECT_DIR" -type f -name "*.go" | head -n1 || true)
+
+if [ -f "$go_mod_file" ] || [ -f "$main_go_file" ] || [ -n "$any_go_file" ]; then
+  language="go"
+  build_tool="go"
+
+  # Определяем корень go-проекта
+  if [ -f "$go_mod_file" ]; then
+    project_dir=$(dirname "$go_mod_file")
+  elif [ -f "$main_go_file" ]; then
+    project_dir=$(dirname "$main_go_file")
+  else
+    project_dir=$(dirname "$any_go_file")
   fi
+
+  # Находим файл с func main
+  mainfile=$(find "$project_dir" -type f -name "*.go" -exec grep -l "func main" {} + | head -n1 || true)
+  if [ -n "$mainfile" ] && [ -f "$mainfile" ]; then
+    entry="$mainfile"
+    log "Set Go entry to file with func main: $entry"
+  else
+    entry="$project_dir/main.go"  # fallback
+    log "Warning: No file with func main found, fallback entry: $entry"
+  fi
+
+  build_cmd="cd $project_dir && go build ./..."
+  test_cmd="cd $project_dir && go test ./..."
+  start_cmd="cd $project_dir && go run $(basename "$entry")"
+
+  artifacts='["project/**/bin/"]'
+  log "Detected Go project in $project_dir/"
 fi
+
 
 # 7) Rust
 cargo_file=$(find_file_recursive "Cargo.toml")
@@ -188,45 +209,7 @@ if [ -f "$cargo_file" ]; then
   log "Detected Rust project in $project_dir/"
 fi
 
-# 8) Java
-if [ "$language" = "unknown" ]; then
-  pom_file=$(find_file_recursive "pom.xml")
-  gradle_file=$(find_file_recursive "build.gradle") || gradle_file=$(find_file_recursive "build.gradle.kts")
-  if [ -f "$pom_file" ]; then
-    language="java"
-    build_tool="maven"
-    [ -z "$entry" ] && entry="$(dirname "$pom_file")/src/main/java"
-    build_cmd="cd $(dirname "$pom_file") && mvn -B package"
-    test_cmd="cd $(dirname "$pom_file") && mvn test"
-    start_cmd="cd $(dirname "$pom_file") && java -jar target/*.jar"
-    artifacts='["project/**/target/*.jar"]'
-    log "Detected Java (Maven) project in $(dirname "$pom_file")/"
-  elif [ -f "$gradle_file" ]; then
-    language="java"
-    build_tool="gradle"
-    [ -z "$entry" ] && entry="$(dirname "$gradle_file")/src/main/java"
-    build_cmd="cd $(dirname "$gradle_file") && ./gradlew build || gradle build"
-    test_cmd="cd $(dirname "$gradle_file") && ./gradlew test || gradle test"
-    start_cmd="cd $(dirname "$gradle_file") && java -jar build/libs/*.jar"
-    artifacts='["project/**/build/libs/*.jar"]'
-    log "Detected Java (Gradle) project in $(dirname "$gradle_file")/"
-  fi
-fi
 
-# 9) .NET
-if [ "$language" = "unknown" ]; then
-  csproj_file=$(find "$PROJECT_DIR" -type f -name "*.csproj" | head -n1)
-  if [ -f "$csproj_file" ]; then
-    language="dotnet"
-    build_tool="dotnet"
-    [ -z "$entry" ] && entry="$csproj_file"
-    build_cmd="cd $(dirname "$csproj_file") && dotnet build"
-    test_cmd="cd $(dirname "$csproj_file") && dotnet test"
-    start_cmd="cd $(dirname "$csproj_file") && dotnet run"
-    artifacts='["project/**/bin/Release/"]'
-    log "Detected .NET project in $(dirname "$csproj_file")/"
-  fi
-fi
 
 # 10) fallback entry
 if [ -z "$entry" ]; then

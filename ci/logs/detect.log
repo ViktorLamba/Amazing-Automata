@@ -293,3 +293,133 @@
 2025-09-26T20:26:24+03:00 Detected Node.js / TypeScript project in project/test/
 2025-09-26T20:26:24+03:00 Manifest written to manifest.json
 2025-09-26T20:26:24+03:00 Done.
+2025-09-26T20:28:39+03:00 Start detect-entry...
+2025-09-26T20:28:39+03:00 Found .deployrc — reading overrides
+2025-09-26T20:28:39+03:00 Detected Node.js / TypeScript project in ./
+2025-09-26T20:28:39+03:00 Set Python entry to main.py: project/src/main.py
+2025-09-26T20:28:39+03:00 Detected Python project in project/src/
+2025-09-26T20:28:39+03:00 Manifest written to manifest.json
+2025-09-26T20:28:39+03:00 Done.
+2025-09-26T20:28:54+03:00 Start detect-entry...
+2025-09-26T20:28:54+03:00 Found .deployrc — reading overrides
+2025-09-26T20:28:54+03:00 Detected Node.js / TypeScript project in ./
+2025-09-26T20:28:54+03:00 Manifest written to manifest.json
+2025-09-26T20:28:54+03:00 Done.
+2025-09-26T20:29:26+03:00 Start detect-entry...
+2025-09-26T20:29:26+03:00 Found .deployrc — reading overrides
+2025-09-26T20:29:26+03:00 Detected Node.js / TypeScript project in ./
+2025-09-26T20:29:26+03:00 Manifest written to manifest.json
+2025-09-26T20:29:26+03:00 Done.
+2025-09-26T20:38:01+03:00 Start detect-entry...
+2025-09-26T20:38:01+03:00 Found .deployrc — reading overrides
+2025-09-26T20:38:01+03:00 Detected Node.js / TypeScript project in ./
+2025-09-26T20:38:01+03:00 Manifest written to manifest.json
+2025-09-26T20:38:01+03:00 Done.
+2025-09-26T20:38:12+03:00 Start detect-entry...
+2025-09-26T20:38:12+03:00 Found .deployrc — reading overrides
+2025-09-26T20:38:13+03:00 Detected Node.js / TypeScript project in ./
+2025-09-26T20:38:13+03:00 Manifest written to manifest.json
+2025-09-26T20:38:13+03:00 Done.
+2025-09-26T20:38:29+03:00 Start detect-entry...
+2025-09-26T20:38:29+03:00 Found .deployrc — reading overrides
+2025-09-26T20:38:29+03:00 Detected Node.js / TypeScript project in ./
+2025-09-26T20:38:29+03:00 Manifest written to manifest.json
+2025-09-26T20:38:29+03:00 Done.
+2025-09-26T20:38:59+03:00 Start detect-entry...
+2025-09-26T20:38:59+03:00 Found .deployrc — reading overrides
+2025-09-26T20:38:59+03:00 Detected Node.js / TypeScript project in ./
+2025-09-26T20:38:59+03:00 Manifest written to manifest.json
+2025-09-26T20:38:59+03:00 Done.
+2025-09-26T20:39:58+03:00 Start detect-entry...
+2025-09-26T20:39:58+03:00 Found .deployrc — reading overrides
+2025-09-26T20:39:58+03:00 Detected Node.js / TypeScript project in ./
+2025-09-26T20:39:58+03:00 Manifest written to manifest.json
+2025-09-26T20:39:58+03:00 Done.
+2025-09-26T20:40:02+03:00 Start detect-entry...
+2025-09-26T20:40:02+03:00 Found .deployrc — reading overrides
+2025-09-26T20:40:02+03:00 Detected Node.js / TypeScript project in ./
+2025-09-26T20:40:02+03:00 Manifest written to manifest.json
+2025-09-26T20:40:02+03:00 Done.
+2025-09-26T20:40:13+03:00 Start detect-entry...
+2025-09-26T20:40:13+03:00 Found .deployrc — reading overrides
+2025-09-26T20:40:13+03:00 Detected Node.js / TypeScript project in ./
+2025-09-26T20:40:13+03:00 Manifest written to manifest.json
+2025-09-26T20:40:13+03:00 Done.
+2025-09-26T20:41:25+03:00 Start detect-entry...
+2025-09-26T20:41:25+03:00 Found .deployrc — reading overrides
+2025-09-26T20:41:25+03:00 Manifest written to manifest.json
+2025-09-26T20:41:25+03:00 Done.
+2025-09-26T20:42:21+03:00 Start detect-entry...
+2025-09-26T20:42:21+03:00 Found .deployrc — reading overrides
+2025-09-26T20:42:21+03:00 Set Rust entry to main.rs: project/src/main.rs
+2025-09-26T20:42:21+03:00 Detected Rust project in project/
+2025-09-26T20:42:21+03:00 Manifest written to manifest.json
+2025-09-26T20:42:21+03:00 Done.
+2025-09-26T20:42:41+03:00 Start detect-entry...
+2025-09-26T20:42:41+03:00 Found .deployrc — reading overrides
+2025-09-26T20:42:41+03:00 Detected Node.js / TypeScript project in ./
+2025-09-26T20:42:41+03:00 Set Rust entry to main.rs: project/src/main.rs
+2025-09-26T20:42:41+03:00 Detected Rust project in project/
+2025-09-26T20:42:41+03:00 Manifest written to manifest.json
+2025-09-26T20:42:41+03:00 Done.
+2025-09-26T20:58:53+03:00 Start detect-entry...
+2025-09-26T20:58:53+03:00 Found .deployrc — reading overrides
+2025-09-26T20:58:53+03:00 Detected Node.js / TypeScript project in ./
+2025-09-26T20:58:53+03:00 Manifest written to manifest.json
+2025-09-26T20:58:53+03:00 Done.
+2025-09-26T21:01:56+03:00 Start detect-entry...
+2025-09-26T21:01:56+03:00 Found .deployrc — reading overrides
+2025-09-26T21:01:56+03:00 Detected Node.js / TypeScript project in ./
+2025-09-26T21:01:56+03:00 Manifest written to manifest.json
+2025-09-26T21:01:56+03:00 Done.
+2025-09-26T21:02:09+03:00 Start detect-entry...
+2025-09-26T21:02:09+03:00 Found .deployrc — reading overrides
+2025-09-26T21:02:09+03:00 Detected Node.js / TypeScript project in ./
+2025-09-26T21:02:09+03:00 Manifest written to manifest.json
+2025-09-26T21:02:09+03:00 Done.
+2025-09-26T21:02:30+03:00 Start detect-entry...
+2025-09-26T21:02:30+03:00 Found .deployrc — reading overrides
+2025-09-26T21:02:31+03:00 Detected Node.js / TypeScript project in ./
+2025-09-26T21:02:31+03:00 Manifest written to manifest.json
+2025-09-26T21:02:31+03:00 Done.
+2025-09-26T21:02:54+03:00 Start detect-entry...
+2025-09-26T21:02:54+03:00 Found .deployrc — reading overrides
+2025-09-26T21:02:54+03:00 Detected Node.js / TypeScript project in ./
+2025-09-26T21:02:55+03:00 Manifest written to manifest.json
+2025-09-26T21:02:55+03:00 Done.
+2025-09-26T21:17:20+03:00 Start detect-entry...
+2025-09-26T21:17:20+03:00 Found .deployrc — reading overrides
+2025-09-26T21:17:20+03:00 Detected Node.js / TypeScript project in ./
+2025-09-26T21:17:20+03:00 Manifest written to manifest.json
+2025-09-26T21:17:20+03:00 Done.
+2025-09-26T21:18:00+03:00 Start detect-entry...
+2025-09-26T21:18:00+03:00 Found .deployrc — reading overrides
+2025-09-26T21:18:00+03:00 Set Go entry to file with func main: project/main.go
+2025-09-26T21:18:00+03:00 Detected Go project in project/
+2025-09-26T21:18:00+03:00 Manifest written to manifest.json
+2025-09-26T21:18:00+03:00 Done.
+2025-09-26T21:18:42+03:00 Start detect-entry...
+2025-09-26T21:18:42+03:00 Found .deployrc — reading overrides
+2025-09-26T21:18:42+03:00 Set Go entry to file with func main: project/main.go
+2025-09-26T21:18:42+03:00 Detected Go project in project/
+2025-09-26T21:18:42+03:00 Manifest written to manifest.json
+2025-09-26T21:18:42+03:00 Done.
+2025-09-26T21:19:03+03:00 Start detect-entry...
+2025-09-26T21:19:03+03:00 Found .deployrc — reading overrides
+2025-09-26T21:19:03+03:00 Detected Node.js / TypeScript project in ./
+2025-09-26T21:19:03+03:00 Set Go entry to file with func main: project/main.go
+2025-09-26T21:19:03+03:00 Detected Go project in project/
+2025-09-26T21:19:03+03:00 Manifest written to manifest.json
+2025-09-26T21:19:03+03:00 Done.
+2025-09-26T21:19:58+03:00 Start detect-entry...
+2025-09-26T21:19:58+03:00 Found .deployrc — reading overrides
+2025-09-26T21:19:58+03:00 Detected Node.js / TypeScript project in ./
+2025-09-26T21:19:58+03:00 Set Python entry to main.py: project/main.py
+2025-09-26T21:19:58+03:00 Detected Python project in project/
+2025-09-26T21:19:58+03:00 Manifest written to manifest.json
+2025-09-26T21:19:58+03:00 Done.
+2025-09-26T21:20:22+03:00 Start detect-entry...
+2025-09-26T21:20:22+03:00 Found .deployrc — reading overrides
+2025-09-26T21:20:22+03:00 Detected Node.js / TypeScript project in ./
+2025-09-26T21:20:22+03:00 Manifest written to manifest.json
+2025-09-26T21:20:22+03:00 Done.
