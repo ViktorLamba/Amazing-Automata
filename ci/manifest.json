@@ -1,8 +1,14 @@
 {
   "language": "unknown",
   "build_tool": "unknown",
-  "entry": "",
-  "has_dockerfile": false,
+  "entry": "src/main.py",
+  "start_cmd": "python src/main.py",
+  "build_cmd": "",
+  "test_cmd": "",
+  "has_dockerfile": true,
   "is_mobile": false,
-  "artifacts": []
+  "artifacts": [],
+  "targets": [
+    "linux/amd64"
+  ]
 }

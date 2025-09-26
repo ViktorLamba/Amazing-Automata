@@ -1,0 +1,17 @@
+{
+  "language": "python",
+  "build_tool": "pip",
+  "entry": "src/main.py",
+  "start_cmd": "python src/main.py",
+  "build_cmd": "pip install -r requirements.txt || true",
+  "test_cmd": "pytest || true",
+  "has_dockerfile": true,
+  "is_mobile": false,
+  "artifacts": [
+    ".venv/",
+    "dist/"
+  ],
+  "targets": [
+    "linux/amd64"
+  ]
+}

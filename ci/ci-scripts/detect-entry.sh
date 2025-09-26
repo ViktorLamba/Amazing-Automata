@@ -2,7 +2,7 @@
 set -euo pipefail
 
 LOGFILE="ci/logs/detect.log"
-OUT="ci/manifest.json"
+OUT="manifest.json"
 mkdir -p ci logs ci/logs
 
 log() { echo "$(date -Iseconds) $*" | tee -a "$LOGFILE" >&2; }
@@ -65,7 +65,9 @@ if [ -f package.json ]; then
 fi
 
 # 5) Python
-if [ -f pyproject.toml ] || [ -f requirements.txt ] || ls *.py >/dev/null 2>&1; then
+if [ -f pyproject.toml ] || [ -f requirements.txt ] || \
+   ls *.py >/dev/null 2>&1 || \
+   { [ -d "project" ] && ls project/*.py >/dev/null 2>&1; }; then
   language="python"
   build_tool="pip"
   if [ -f main.py ] && [ -z "$entry" ]; then entry="main.py"; fi
