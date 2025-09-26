@@ -5,7 +5,7 @@
   "start_cmd": "python src/main.py",
   "build_cmd": "",
   "test_cmd": "",
-  "has_dockerfile": true,
+  "has_dockerfile": false,
   "is_mobile": false,
   "artifacts": [],
   "targets": [
