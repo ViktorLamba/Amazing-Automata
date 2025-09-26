@@ -209,7 +209,73 @@ if [ -f "$cargo_file" ]; then
   log "Detected Rust project in $project_dir/"
 fi
 
+# 8) C++
+cmake_file=$(find_file_recursive "CMakeLists.txt")
+makefile_file=$(find_file_recursive "Makefile")
 
+if [ -f "$cmake_file" ] || [ -f "$makefile_file" ]; then
+  language="cpp"
+  build_tool="cmake"
+  
+  # Определяем корневую папку проекта
+  if [ -f "$cmake_file" ]; then
+    project_dir=$(dirname "$cmake_file")
+    build_tool="cmake"
+  else
+    project_dir=$(dirname "$makefile_file")
+    build_tool="make"
+  fi
+  
+  # Ищем основные C++ файлы во всей папке проекта рекурсивно
+  main_cpp_candidate=$(find "$project_dir" -name "main.cpp" | head -n1 || true)
+  main_cc_candidate=$(find "$project_dir" -name "main.cc" | head -n1 || true)
+  main_cxx_candidate=$(find "$project_dir" -name "main.cxx" | head -n1 || true)
+  any_cpp_candidate=$(find "$project_dir" -name "*.cpp" | head -n1 || true)
+  any_cc_candidate=$(find "$project_dir" -name "*.cc" | head -n1 || true)
+  any_cxx_candidate=$(find "$project_dir" -name "*.cxx" | head -n1 || true)
+  any_cplusplus_candidate=$(find "$project_dir" -name "*.c++" | head -n1 || true)
+  
+  # Приоритет поиска entry point
+  if [ -n "$main_cpp_candidate" ] && [ -f "$main_cpp_candidate" ]; then
+    entry="$main_cpp_candidate"
+    log "Set C++ entry to main.cpp: $entry"
+  elif [ -n "$main_cc_candidate" ] && [ -f "$main_cc_candidate" ]; then
+    entry="$main_cc_candidate"
+    log "Set C++ entry to main.cc: $entry"
+  elif [ -n "$main_cxx_candidate" ] && [ -f "$main_cxx_candidate" ]; then
+    entry="$main_cxx_candidate"
+    log "Set C++ entry to main.cxx: $entry"
+  elif [ -n "$any_cpp_candidate" ] && [ -f "$any_cpp_candidate" ]; then
+    entry="$any_cpp_candidate"
+    log "Set C++ entry to first .cpp file: $entry"
+  elif [ -n "$any_cc_candidate" ] && [ -f "$any_cc_candidate" ]; then
+    entry="$any_cc_candidate"
+    log "Set C++ entry to first .cc file: $entry"
+  elif [ -n "$any_cxx_candidate" ] && [ -f "$any_cxx_candidate" ]; then
+    entry="$any_cxx_candidate"
+    log "Set C++ entry to first .cxx file: $entry"
+  elif [ -n "$any_cplusplus_candidate" ] && [ -f "$any_cplusplus_candidate" ]; then
+    entry="$any_cplusplus_candidate"
+    log "Set C++ entry to first .c++ file: $entry"
+  else
+    log "Warning: No C++ source files found in $project_dir"
+    entry="$project_dir/main.cpp"  # fallback path
+  fi
+  
+  # Команды сборки в зависимости от build tool
+  if [ "$build_tool" = "cmake" ]; then
+    build_cmd="cd $project_dir && mkdir -p build && cd build && cmake .. && make -j4"
+    test_cmd="cd $project_dir/build && ctest . || true"
+    start_cmd="cd $project_dir/build && ./$(basename $project_dir)"
+  else
+    build_cmd="cd $project_dir && make -j4"
+    test_cmd="cd $project_dir && make test || true"
+    start_cmd="cd $project_dir && ./$(basename $project_dir)"
+  fi
+  
+  artifacts='["project/**/build/","project/**/bin/","project/**/*.exe"]'
+  log "Detected C++ project in $project_dir/"
+fi
 
 # 10) fallback entry
 if [ -z "$entry" ]; then
