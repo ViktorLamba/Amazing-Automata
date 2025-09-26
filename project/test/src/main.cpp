@@ -1,6 +1,6 @@
 #include <iostream>
 
 int main() {
-    std::cout << "Hello, C++ project!" << std::endl;
+    std::cout << "Hello, C++ test project!" << std::endl;
     return 0;
 }
