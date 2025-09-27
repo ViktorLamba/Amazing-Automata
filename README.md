@@ -86,6 +86,7 @@ $ git clone https://github.com/ViktorLamba/Amazing-Automata.git .
 # 🏗️ Структура проекта
 
 Amazing-Automata/
+
 ├── ci/
 
 │   ├── ci-scripts/
