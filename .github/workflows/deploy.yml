@@ -3,13 +3,14 @@ name: CI/CD Docker App
 on:
   push:
     branches:
-      - ci-out-project-test
+      - ci-out-project-test  # ветка, при пуше в которую срабатывает Action
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
+
     steps:
-      - name: Checkout code
+      - name: Checkout repository
         uses: actions/checkout@v3
 
       - name: Deploy and build on server
@@ -19,10 +20,20 @@ jobs:
           username: ${{ secrets.SERVER_USER }}
           key: ${{ secrets.SERVER_KEY }}
           script: |
-            cd /root/myproject || git clone git@github.com:ViktorLamba/Amazing-Automata.git /root/myproject
-            cd /root/myproject
+            # путь на сервере, можно любое имя
+            SERVER_DIR=/root/Amazing-Automata
+
+            # если папки нет, клонируем репозиторий
+            cd $SERVER_DIR || git clone git@github.com:ViktorLamba/Amazing-Automata.git $SERVER_DIR
+            cd $SERVER_DIR
+
+            # обновляем код
             git pull origin main
-            docker build -t my-app:latest .
+
+            # билдим Docker образ из папки project/test
+            docker build -t my-app:latest ./project/test
+
+            # перезапускаем контейнер
             docker stop my-app || true
             docker rm my-app || true
             docker run -d --name my-app -p 80:3000 my-app:latest
