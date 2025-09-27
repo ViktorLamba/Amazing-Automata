@@ -1011,3 +1011,185 @@
 2025-09-27T11:50:22+03:00 Detected Go project in project/
 2025-09-27T11:50:22+03:00 Manifest written to manifest.json
 2025-09-27T11:50:22+03:00 Done.
+2025-09-27T12:30:18+03:00 Start detect-entry...
+2025-09-27T12:30:19+03:00 Found .deployrc — reading overrides
+2025-09-27T12:30:25+03:00 ℹ️ Database detected: mysql
+2025-09-27T12:30:25+03:00 Manifest written to manifest.json
+2025-09-27T12:30:25+03:00 Done.
+2025-09-27T13:02:00+03:00 Start detect-entry...
+2025-09-27T13:02:00+03:00 Found .deployrc — reading overrides
+2025-09-27T13:02:02+03:00 Detected Python project in project/test/, entry='project/test/ci/test_mysql.py'
+2025-09-27T13:02:03+03:00 Detected C++ project in project/test/doc/
+2025-09-27T13:02:03+03:00 ℹ️ Database detected: mysql
+2025-09-27T13:02:03+03:00 Manifest written to manifest.json
+2025-09-27T13:02:03+03:00 Done.
+2025-09-27T13:02:18+03:00 Start detect-entry...
+2025-09-27T13:02:18+03:00 Found .deployrc — reading overrides
+2025-09-27T13:02:20+03:00 Detected Python project in project/test/, entry='project/test/ci/test_mysql.py'
+2025-09-27T13:02:21+03:00 Detected C++ project in project/test/doc/
+2025-09-27T13:02:21+03:00 ℹ️ Database detected: mysql
+2025-09-27T13:02:21+03:00 Manifest written to manifest.json
+2025-09-27T13:02:21+03:00 Done.
+2025-09-27T13:12:25+03:00 Start detect-entry...
+2025-09-27T13:12:25+03:00 Found .deployrc — reading overrides
+2025-09-27T13:12:27+03:00 Detected Python project in project/test/, entry='project/test/ci/test_mysql.py'
+2025-09-27T13:12:28+03:00 Detected C++ project in project/test/docs/
+2025-09-27T13:12:28+03:00 ℹ️ Database detected: mysql
+2025-09-27T13:12:28+03:00 Manifest written to manifest.json
+2025-09-27T13:12:28+03:00 Done.
+2025-09-27T13:19:09+03:00 Start detect-entry...
+2025-09-27T13:19:09+03:00 Found .deployrc — reading overrides
+2025-09-27T13:19:11+03:00 Detected Python project in project/test/, entry='project/test/ci/test_mysql.py'
+2025-09-27T13:19:12+03:00 Detected C++ project in project/test/docs/
+2025-09-27T13:19:12+03:00 ℹ️ Database detected: mysql
+2025-09-27T13:19:12+03:00 Manifest written to manifest.json
+2025-09-27T13:19:12+03:00 Done.
+2025-09-27T13:20:02+03:00 Start detect-entry...
+2025-09-27T13:20:02+03:00 Found .deployrc — reading overrides
+2025-09-27T13:20:04+03:00 Detected Python project in project/test/, entry='project/test/ci/test_mysql.py'
+2025-09-27T13:20:04+03:00 Detected C++ project in project/test/docs/
+2025-09-27T13:20:04+03:00 ℹ️ Database detected: mysql
+2025-09-27T13:20:05+03:00 Manifest written to manifest.json
+2025-09-27T13:20:05+03:00 Done.
+2025-09-27T13:22:54+03:00 Start detect-entry...
+2025-09-27T13:22:54+03:00 Found .deployrc — reading overrides
+2025-09-27T13:22:56+03:00 Detected Python project in project/test/, entry='project/test/ci/test_mysql.py'
+2025-09-27T13:22:57+03:00 Detected C++ project in project/test/docs/
+2025-09-27T13:22:57+03:00 ℹ️ Database detected: mysql
+2025-09-27T13:22:57+03:00 Manifest written to manifest.json
+2025-09-27T13:22:57+03:00 Done.
+2025-09-27T13:39:33+03:00 Start detect-entry...
+2025-09-27T13:39:33+03:00 Found .deployrc — reading overrides
+2025-09-27T13:39:35+03:00 Detected Python project in project/test/, entry='project/test/ci/test_mysql.py'
+2025-09-27T13:39:36+03:00 Detected C++ project in project/test/docs/
+2025-09-27T13:39:36+03:00 ℹ️ Database detected: mysql
+2025-09-27T13:39:36+03:00 Manifest written to manifest.json
+2025-09-27T13:39:36+03:00 Done.
+2025-09-27T13:48:25+03:00 Start detect-entry...
+2025-09-27T13:48:25+03:00 Found .deployrc — reading overrides
+2025-09-27T13:48:27+03:00 Detected Python project in project/test/, entry='project/test/ci/test_mysql.py'
+2025-09-27T13:48:28+03:00 Detected C++ project in project/test/docs/
+2025-09-27T13:48:28+03:00 ℹ️ Database detected: mysql
+2025-09-27T13:48:28+03:00 Manifest written to manifest.json
+2025-09-27T13:48:28+03:00 Done.
+2025-09-27T13:48:44+03:00 Start detect-entry...
+2025-09-27T13:48:44+03:00 Found .deployrc — reading overrides
+2025-09-27T13:48:46+03:00 Detected Python project in project/test/, entry='project/test/ci/test_mysql.py'
+2025-09-27T13:48:47+03:00 Detected C++ project in project/test/docs/
+2025-09-27T13:48:47+03:00 ℹ️ Database detected: mysql
+2025-09-27T13:48:47+03:00 Manifest written to manifest.json
+2025-09-27T13:48:47+03:00 Done.
+2025-09-27T13:51:21+03:00 Start detect-entry...
+2025-09-27T13:51:21+03:00 Found .deployrc — reading overrides
+2025-09-27T13:51:22+03:00 Detected Python project in project/test/, entry='project/test/ci/test_mysql.py'
+2025-09-27T13:51:23+03:00 Detected C++ project in project/test/docs/
+2025-09-27T13:51:23+03:00 ℹ️ Database detected: mysql
+2025-09-27T13:51:24+03:00 Manifest written to manifest.json
+2025-09-27T13:51:24+03:00 Done.
+2025-09-27T13:52:27+03:00 Start detect-entry...
+2025-09-27T13:52:27+03:00 Found .deployrc — reading overrides
+2025-09-27T13:52:28+03:00 Detected Python project in project/test/, entry='project/test/ci/test_mysql.py'
+2025-09-27T13:52:29+03:00 Detected C++ project in project/test/docs/
+2025-09-27T13:52:29+03:00 ℹ️ Database detected: mysql
+2025-09-27T13:52:29+03:00 Manifest written to manifest.json
+2025-09-27T13:52:29+03:00 Done.
+2025-09-27T14:01:35+03:00 Start detect-entry...
+2025-09-27T14:01:35+03:00 Found .deployrc — reading overrides
+2025-09-27T14:01:35+03:00 Detected Python project in project/Jarvis-Desktop-Voice-Assistant/, entry='project/Jarvis-Desktop-Voice-Assistant/Jarvis/jarvis.py'
+2025-09-27T14:01:35+03:00 ⚠️ Unsupported database ''. Using unknown-database.
+2025-09-27T14:01:35+03:00 Manifest written to manifest.json
+2025-09-27T14:01:35+03:00 Done.
+2025-09-27T14:04:21+03:00 Start detect-entry...
+2025-09-27T14:04:21+03:00 Found .deployrc — reading overrides
+2025-09-27T14:04:21+03:00 Detected Python project in project/, entry='project/Jarvis/jarvis.py'
+2025-09-27T14:04:21+03:00 ⚠️ Unsupported database ''. Using unknown-database.
+2025-09-27T14:04:21+03:00 Manifest written to manifest.json
+2025-09-27T14:04:21+03:00 Done.
+2025-09-27T14:05:10+03:00 Start detect-entry...
+2025-09-27T14:05:10+03:00 Found .deployrc — reading overrides
+2025-09-27T14:05:10+03:00 Detected Python project in project/, entry='project/Jarvis/jarvis.py'
+2025-09-27T14:05:10+03:00 Manifest written to manifest.json
+2025-09-27T14:05:10+03:00 Done.
+2025-09-27T14:07:20+03:00 Start detect-entry...
+2025-09-27T14:07:20+03:00 Found .deployrc — reading overrides
+2025-09-27T14:07:20+03:00 Detected Python project in project/, entry='project/Jarvis/jarvis.py'
+2025-09-27T14:07:20+03:00 Manifest written to manifest.json
+2025-09-27T14:07:20+03:00 Done.
+2025-09-27T14:10:17+03:00 Start detect-entry...
+2025-09-27T14:10:17+03:00 Found .deployrc — reading overrides
+2025-09-27T14:10:17+03:00 Detected Python project in project/, entry='project/Jarvis/jarvis.py'
+2025-09-27T14:10:17+03:00 ⚠️ Unsupported database ''. Using unknown-database.
+2025-09-27T14:10:17+03:00 Manifest written to manifest.json
+2025-09-27T14:10:17+03:00 Done.
+2025-09-27T14:19:22+03:00 Start detect-entry...
+2025-09-27T14:19:22+03:00 Found .deployrc — reading overrides
+2025-09-27T14:19:22+03:00 Detected Python project in project/, entry='project/Jarvis/jarvis.py'
+2025-09-27T14:19:22+03:00 ⚠️ Unsupported database ''. Using unknown-database.
+2025-09-27T14:19:22+03:00 Manifest written to manifest.json
+2025-09-27T14:19:22+03:00 Done.
+2025-09-27T14:25:05+03:00 Start detect-entry...
+2025-09-27T14:25:05+03:00 Found .deployrc — reading overrides
+2025-09-27T14:25:05+03:00 Detected Python project in project/, entry='project/Jarvis/jarvis.py'
+2025-09-27T14:25:05+03:00 ℹ️ Database detected: postgres
+2025-09-27T14:25:05+03:00 Manifest written to manifest.json
+2025-09-27T14:25:05+03:00 Done.
+2025-09-27T14:26:24+03:00 Start detect-entry...
+2025-09-27T14:26:24+03:00 Found .deployrc — reading overrides
+2025-09-27T14:26:24+03:00 Detected Python project in project/, entry='project/Jarvis/jarvis.py'
+2025-09-27T14:26:24+03:00 ⚠️ Unsupported database ''. Using unknown-database.
+2025-09-27T14:26:24+03:00 Manifest written to manifest.json
+2025-09-27T14:26:24+03:00 Done.
+2025-09-27T14:28:04+03:00 Start detect-entry...
+2025-09-27T14:28:04+03:00 Found .deployrc — reading overrides
+2025-09-27T14:28:04+03:00 Detected Python project in project/, entry='project/Jarvis/jarvis.py'
+2025-09-27T14:28:04+03:00 ⚠️ Unsupported database ''. Using unknown-database.
+2025-09-27T14:28:04+03:00 Manifest written to manifest.json
+2025-09-27T14:28:04+03:00 Done.
+2025-09-27T14:28:39+03:00 Start detect-entry...
+2025-09-27T14:28:39+03:00 Found .deployrc — reading overrides
+2025-09-27T14:28:39+03:00 Detected Python project in project/, entry='project/Jarvis/jarvis.py'
+2025-09-27T14:28:39+03:00 ⚠️ Unsupported database ''. Using unknown-database.
+2025-09-27T14:28:39+03:00 Manifest written to manifest.json
+2025-09-27T14:28:39+03:00 Done.
+2025-09-27T14:31:50+03:00 Start detect-entry...
+2025-09-27T14:31:50+03:00 Found .deployrc — reading overrides
+2025-09-27T14:31:50+03:00 Detected Python project in project/, entry='project/Jarvis/jarvis.py'
+2025-09-27T14:31:50+03:00 ℹ️ Database detected: mysql
+2025-09-27T14:31:50+03:00 Manifest written to manifest.json
+2025-09-27T14:31:50+03:00 Done.
+2025-09-27T14:37:28+03:00 Start detect-entry...
+2025-09-27T14:37:28+03:00 Found .deployrc — reading overrides
+2025-09-27T14:37:28+03:00 Detected Python project in project/, entry='project/Jarvis/jarvis.py'
+2025-09-27T14:37:28+03:00 ℹ️ Database detected: mysql
+2025-09-27T14:37:28+03:00 Manifest written to manifest.json
+2025-09-27T14:37:28+03:00 Done.
+2025-09-27T14:38:54+03:00 Start detect-entry...
+2025-09-27T14:38:54+03:00 Found .deployrc — reading overrides
+2025-09-27T14:38:54+03:00 Detected Python project in project/, entry='project/Jarvis/jarvis.py'
+2025-09-27T14:38:54+03:00 ℹ️ Database detected: mysql
+2025-09-27T14:38:54+03:00 Manifest written to manifest.json
+2025-09-27T14:38:54+03:00 Done.
+2025-09-27T14:40:07+03:00 Start detect-entry...
+2025-09-27T14:40:07+03:00 Found .deployrc — reading overrides
+2025-09-27T14:40:07+03:00 Detected Python project in project/, entry='project/Jarvis/jarvis.py'
+2025-09-27T14:40:07+03:00 ℹ️ Database detected: mysql
+2025-09-27T14:40:07+03:00 Manifest written to manifest.json
+2025-09-27T14:40:07+03:00 Done.
+2025-09-27T14:41:19+03:00 Start detect-entry...
+2025-09-27T14:41:19+03:00 Found .deployrc — reading overrides
+2025-09-27T14:41:19+03:00 Detected Python project in project/, entry='project/Jarvis/jarvis.py'
+2025-09-27T14:41:19+03:00 ℹ️ Database detected: mysql
+2025-09-27T14:41:19+03:00 Manifest written to manifest.json
+2025-09-27T14:41:19+03:00 Done.
+2025-09-27T14:43:02+03:00 Start detect-entry...
+2025-09-27T14:43:02+03:00 Found .deployrc — reading overrides
+2025-09-27T14:43:03+03:00 Detected Python project in project/, entry='project/Jarvis/jarvis.py'
+2025-09-27T14:43:03+03:00 ℹ️ Database detected: mysql
+2025-09-27T14:43:03+03:00 Manifest written to manifest.json
+2025-09-27T14:43:03+03:00 Done.
+2025-09-27T14:44:36+03:00 Start detect-entry...
+2025-09-27T14:44:36+03:00 Found .deployrc — reading overrides
+2025-09-27T14:44:36+03:00 Detected Python project in project/, entry='project/Jarvis/jarvis.py'
+2025-09-27T14:44:36+03:00 ℹ️ Database detected: mysql
+2025-09-27T14:44:36+03:00 Manifest written to manifest.json
+2025-09-27T14:44:36+03:00 Done.
