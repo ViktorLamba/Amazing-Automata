@@ -65,8 +65,9 @@ FROM golang:1.20-alpine AS build
 WORKDIR /src
 COPY . /src
 RUN apk add --no-cache build-base git && \
-    go mod download && \
-    CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -o /out/app ./...
+    cd project && \
+    go mod tidy && \
+    CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -o /out/app main.go
 
 FROM alpine:3.18
 RUN adduser -D appuser

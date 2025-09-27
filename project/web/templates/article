@@ -1,0 +1,280 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta charset="utf-8">
+		<meta http-equiv="X-UA-Compatible" content="IE=edge">
+		<meta name="viewport" content="width=device-width, initial-scale=1">
+		<meta name="description" content="Go语言在线书籍和工具等">
+		<meta name="author" content="">
+		<link rel="icon" href="/static/go101/images/101-v1.ico">
+		<link rel="apple-touch-icon" sizes="152x152" href="/static/go101/images/iphone-v1.jpeg">
+
+		<title>{{- if .Title -}}{{.Title}} - {{- end -}}Go语言101</title>
+
+		{{- if false }} !!!!! NOTE: sync the names in go101 js file. !!!!! {{ end -}}
+
+		{{- if eq .Theme "light" -}}
+		<link id="css-bs" href="/static/bootstrap/v4.5.0/css/bootstrap.min.css" rel="stylesheet">
+		<link id="css-go101" href="/static/go101/css/v991-light.css" rel="stylesheet">
+		<link id="css-prism" href="/static/prism/2020-08-03-light/prism.css" rel="stylesheet">
+		<script id="js-prism" src="/static/prism/2020-08-03-light/prism.js"></script>
+		{{- else -}}
+		<link id="css-bs" href="/static/bootstrap/v4.0.3-dark/css/bootstrap.min.css" rel="stylesheet">
+		<link id="css-go101" href="/static/go101/css/v991-dark.css" rel="stylesheet">
+		<link id="css-prism" href="/static/prism/2020-08-03-dark/prism.css" rel="stylesheet">
+		<script id="js-prism" src="/static/prism/2020-08-03-dark/prism.js"></script>
+		{{- end }}
+
+		<script src="/static/jquery/jquery.min-v1.11.2.js"></script>
+		<script src="/static/go101/js/v5.js"></script>
+		<!--[if lt IE 9]>
+		<script src="https://oss.maxcdn.com/html5shiv/3.7.2/html5shiv.min.js"></script>
+		<script src="https://oss.maxcdn.com/respond/1.4.2/respond.min.js"></script>
+		<![endif]-->
+		
+		<style>
+		div, p, ul, li, td, th {line-height: 1.65;}
+		</style>
+
+		<script>
+		var theme = {{ .Theme  }}
+		</script>
+	</head>
+
+	<body>
+		<div class="container">
+		
+		{{ with .Article -}}
+		{{- if eq .Group "website" -}}
+		
+			{{- template "body" . -}}
+			
+		{{- else -}}
+
+			{{- template "navbar" . -}}
+
+			{{- template "body" . -}}
+
+			{{- template "promotions" . -}}
+		
+		{{- end -}}
+		{{- end }}
+
+		</div>
+	</body>
+</html>
+
+
+
+{{ define "navbar" }}
+
+{{- $is_fundamentals := (eq .Group "fundamentals") -}}
+{{- $is_generics := (eq .Group "generics") -}}
+{{- $is_optimizations := (eq .Group "optimizations") -}}
+{{- $is_details_and_tips := (eq .Group "details-and-tips") -}}
+{{- $is_quizzes := (eq .Group "quizzes") -}}
+
+{{- $is_apps_and_libs := (eq .Group "apps-and-libs") -}}
+{{- $is_blog := (eq .Group "blog") -}}
+
+{{- $is_index_page := (eq .FilenameWithoutExt "101") -}}
+
+
+<div class="row nav-bar-with-borders">
+	<div class="col-xs-6 col-sm-4 nav-item-inactive">
+		<a href="/"><small>首页</small></a>
+	</div>
+	
+	{{- if and $is_fundamentals $is_index_page -}}
+	<div class="col-xs-6 col-sm-4 nav-item-active">
+		<small>Go语言101</small>
+	</div>
+	{{- else -}}
+	<div class="col-xs-6 col-sm-4 nav-item- {{- if not $is_fundamentals -}} in {{- end -}} active">
+		<a href="/article/101.html"><small>Go语言101</small></a>
+	</div>
+	{{- end -}}
+
+	{{- if and $is_generics $is_index_page -}}
+	<div class="col-xs-6 col-sm-4 nav-item-active">
+		<small>Go自定义泛型101</small>
+	</div>
+	{{- else -}}
+	<div class="col-xs-6 col-sm-4 nav-item- {{- if not $is_generics -}} in {{- end -}} active">
+		<a href="/generics/101.html"><small>Go自定义泛型101</small></a>
+	</div>
+	{{- end -}}
+	
+	{{- if and $is_details_and_tips $is_index_page -}}
+	<div class="col-xs-6 col-sm-4 nav-item-active">
+		<small>Go细节与小技巧101</small>
+	</div>
+	{{- else -}}
+	<div class="col-xs-6 col-sm-4 nav-item- {{- if not $is_details_and_tips -}} in {{- end -}} active">
+		<a href="/details-and-tips/101.html"><small>Go细节与小技巧101</small></a>
+	</div>
+	{{- end -}}
+	
+	{{- if and $is_optimizations $is_index_page -}}
+	<div class="col-xs-6 col-sm-4 nav-item-active">
+		<small>Go程序优化101</small>
+	</div>
+	{{- else -}}
+	<div class="col-xs-6 col-sm-4 nav-item- {{- if not $is_optimizations -}} in {{- end -}} active">
+		<a href="/optimizations/101.html"><small>Go程序优化101</small></a></small>
+	</div>
+	{{- end -}}
+	
+	{{- if and $is_quizzes $is_index_page -}}
+	<div class="col-xs-6 col-sm-4 nav-item-active">
+		<small>Go测验101</small>
+	</div>
+	{{- else -}}
+	<div class="col-xs-6 col-sm-4 nav-item- {{- if not $is_quizzes -}} in {{- end -}} active">
+		<a href="/quizzes/101.html"><small>Go测验101</small></a>
+	</div>
+	{{- end -}}
+	
+	<div class="col-xs-6 col-sm-4 nav-item-inactive" style="color: #777;"><small>Go问答101</small></div>
+	
+	<div class="col-xs-6 col-sm-4 nav-item-inactive" style="color: #777;"><small>Go编程实战101</small></div>
+
+	<div class="col-xs-6 col-sm-4 nav-item-inactive" style="color: #777;"><small>Go Bugs 101</small></div>
+	
+	{{- if and $is_blog $is_index_page -}}
+	<div class="col-xs-6 col-sm-4 nav-item-active">
+		<small>Go 101 博客</small>
+	</div>
+	{{- else -}}
+	<div class="col-xs-6 col-sm-4 nav-item- {{- if not $is_blog -}} in {{- end -}} active">
+		<a href="/blog/101.html"><small>Go 101 博客</small></a>
+	</div>
+	{{- end -}}
+
+	{{- if and $is_apps_and_libs $is_index_page -}}
+	<div class="col-xs-6 col-sm-4 nav-item-active">
+		<small>Go 101 Apps &amp; Libs</small>
+	</div>
+	{{- else -}}
+	<div class="col-xs-6 col-sm-4 nav-item- {{- if not $is_apps_and_libs -}} in {{- end -}} active">
+		<a href="/apps-and-libs/101.html"><small>Go 101 应用和库</small></a>
+	</div>
+	{{- end -}}
+	
+	<div class="col-xs-6 col-sm-4 nav-item-inactive" style="color: #777;" id="theme-switch"><small>主题：暗色/亮色</small></div>
+
+</div>
+
+<div class="alert alert-warning text-center"><small>
+<a href="https://tmd.tapirgames.com/">TapirMD</a> - 一款强大的下一代致力于简化内容创作的标记语言（比markdown强大的多；<a href="https://tmd.tapirgames.com/play.html">在线体验</a>）。
+</small></div>
+
+<p></p>
+
+{{ end }}
+
+
+
+
+
+
+{{ define "body" }}
+
+{{ .Content -}}
+
+{{ end }}
+
+
+
+
+
+
+{{ define "promotions" }}
+
+{{- $is_fundamentals := (eq .Group "fundamentals") -}}
+{{- $is_generics := (eq .Group "generics") -}}
+{{- $is_optimizations := (eq .Group "optimizations") -}}
+{{- $is_details_and_tips := (eq .Group "details-and-tips") -}}
+{{- $is_quizzes := (eq .Group "quizzes") -}}
+
+{{- $not_index_page := (ne .FilenameWithoutExt "101") -}}
+{{- $is_book_page := (or (lt (len .FilenameWithoutExt) 4) (ne (slice .FilenameWithoutExt 0 4) "100-")) -}}
+{{- $show_index := (and $not_index_page $is_book_page) -}}
+
+{{ if and $show_index .Index -}}
+
+<hr>
+
+<div class="text-center"><a href="#i-{{ .Filename }}">目录↡</a></div>
+
+{{ end }}
+
+<hr>
+
+<div id="contact" class="row alert alert-success">
+	{{ if or true $show_index -}}
+	<div class="col-xs-12 col-sm-7 col-md-7 col-lg-7"><small>
+	{{ end }}
+		<p>
+		Go101.org网站内容包括Go编程各种相关知识（比如Go基础、Go优化、Go细节、Go实战、Go测验、Go工具等）。后续将不断有新的内容加入。敬请收藏关注期待。
+		</p>
+		<p>
+		本丛书微信公众号（联系方式一）名称为<b>"Go 101"</b>。二维码在<a href="/">网站首页</a>。此公众号将时不时地发表一些Go语言相关的原创短文。各位如果感兴趣，可以搜索关注一下。
+		</p>
+		<p>
+		《Go语言101》系列丛书项目目前托管在<a href="https://github.com/golang101/golang101">Github</a>上（联系方式二）。欢迎各位在此项目中通过提交bug和PR的方式来改进完善《Go语言101》丛书中的各篇文章。我们可以在项目目录下运行<code>go run .</code>来浏览和确认各种改动。
+		</p>
+		<p>
+		本书的twitter帐号为<a href="https://twitter.com/Golang_101">@Golang_101</a>（联系方式三）。玩推的Go友可以适当关注。
+		</p>
+		<p>
+		你或许对本书作者老貘开发的<a href="https://gfw.tapirgames.com">一些App</a>感兴趣。
+		</p>
+
+	{{ if $show_index -}}
+
+		<div id="ebooks">
+
+		{{- if $is_fundamentals }}
+The English version of this book is <a href="https://go101.org/details-and-tips/101.html">here</a>.
+		{{ end -}}
+
+		{{if $is_generics }}
+The English version of this book is <a href="https://go101.org/generics/101.html">here</a>.
+		{{ end -}}
+
+		{{- if $is_optimizations }}
+The English version of this book is <a href="https://go101.org/optimizations/101.html">here</a>.
+		{{ end -}}
+
+		{{- if $is_details_and_tips }}
+The English version of this book is <a href="https://go101.org/details-and-tips/101.html">here</a>.
+		{{ end -}}
+
+		</div>
+
+	{{ end -}}
+
+	{{ if or true $show_index }}
+	</small></div>
+	<div class="col-xs-12 col-sm-5 col-md-5 col-lg-5 text-center"><small>
+		<img src="../res/101-reward-qrcode-8.png" alt="赞赏" style="max-width: 100%; height: auto; width: auto\9;"/>
+		<br/>
+		<span style="font-size: small;">（《Go语言101》系列丛书由老貘从2016年7月开始编写。目前此系列丛书仍在不断改进和增容中。你的赞赏是本系列丛书和此Go101.org网站不断增容和维护的动力。）</span>
+	</small></div>
+	{{ end }}
+
+</div>
+
+
+{{ if and $show_index .Index -}}
+
+<hr>
+目录：
+{{ .Index }}
+
+{{- end }}
+
+{{ end }}
+
+

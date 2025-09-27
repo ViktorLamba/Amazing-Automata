@@ -1,0 +1,155 @@
+
+<h1>更多关于Go的知识</h1>
+
+<p>
+《Go语言101》中的系列文章主要着墨于Go语法和语义。
+更多和Go相关的话题并没有在《Go语言101》中详尽解释。
+本文将对这些话题做一个简单的介绍，并提供一些链接供读者自行探索。
+</p>
+
+<h3>程序性能分析、基准测试、单元测试和模糊测试</h3>
+
+<div>
+我们可以使用Go官方工具链中的<code>go test</code>命令来运行单元测试和基准测试。
+测试源文件名必须以<code>_test.go</code>结尾。
+Go官方工具链也支持程序性能分析。
+请阅读下列文章获取详情：
+<ul>
+<li>
+	<a href="https://github.com/golang/go/wiki/Performance">Go程序性能分析</a>
+</li>
+<li>
+	<a href="https://golang.google.cn/pkg/testing/"><code>testing</code>标准库包</a>
+</li>
+<li>
+	<a href="https://blog.golang.org/examples">使用例子程序做测试</a>.
+</li>
+<li>
+	<a href="https://blog.golang.org/subtests">使用子单元测试和子基准测试</a>
+</li>
+<li>
+	<a href="https://golang.google.cn/cmd/go/#hdr-Test_packages"><code>go test</code>命令选项</a>
+</li>
+<li>
+	<a href="https://go.dev/doc/fuzz/">Go Fuzzing</a>.
+</li>
+</ul>
+</div>
+
+<h3>gccgo</h3>
+
+<p>
+<a href="https://github.com/golang/gofrontend">gccgo</a>是Go核心团队维护开发的另一款Go编译器。
+它的主要目的是为了验证标准编译器（gc）的正确性。
+我们可以在<code>go run</code>、<code>go build</code>和<code>go install</code>等命令中使用选项<code>-compiler=gccgo</code>来指定使用gccgo编译器。
+此选项需要安装<code>gccgo</code>软件包才能起作用。
+gccgo命令也可<a href="https://golang.google.cn/doc/install/gccgo#Using_gccgo">单独运行</a>。
+</p>
+
+<h3><code>go/*</code>标准库包</h3>
+
+<p>
+<code>go/*</code>标准库包提供Go源文件解析相关的功能。这些库包对于开发各种Go源代码分析工具很有帮助。
+请阅读<a href="https://github.com/golang/example/tree/master/gotypes">Go代码分析</a>和<a href="https://golang.google.cn/pkg/go/">这些库包的文档</a>来获取如何使用这些库包中提供的功能。
+</p>
+
+<h3>系统调用</h3>
+
+<p>
+我们可以使用<code>syscall</code>标准库包中的函数来进行系统调用。
+注意此标准库包和其它标准库包不同，它其中的函数是和具体操作系统相关的。
+</p>
+
+<h3>Go汇编</h3>
+
+<p>
+Go函数可以使用Go汇编语言来编写。Go汇编是一种跨平台（尽管并非100%）的汇编语言。
+Go汇编汇编常用来实现一些对性能要求很高的函数。
+</p>
+
+<div>
+更多详情，请阅读下列文章：
+<ul>
+<li>
+	<a href="https://golang.google.cn/doc/asm">Go汇编快速导读</a>
+</li>
+<li>
+	<a href ="https://talks.golang.org/2016/asm.slide">Go汇编的设计</a>
+</li>
+</ul>
+
+</div>
+
+<h3>cgo</h3>
+
+<div>
+通过cgo机制，我们可以在Go代码中调用C代码，或者反之。
+请阅读下列链接获取详情：
+<ul>
+<li>
+	<a href="https://blog.golang.org/cmd/cgo/">cgo官方文档</a>
+</li>
+<li>
+	<a href="https://blog.golang.org/c-go-cgo">C? Go? Cgo!</a>
+</li>
+<li>
+	<a href="https://github.com/golang/go/wiki/cgo">Go维基中的cgo页面</a>
+</li>
+</ul>
+
+<p>
+通过C代码做为桥梁，我们也可以使C++和Go代码能够相互调用。
+</p>
+
+<p>
+注意，cgo的使用将给跨平台Go项目的维护开发带来一些麻烦。另外Go和C之间互调不如Go-Go和C-C调用高效。
+</p>
+</div>
+
+<a class="anchor" id="cross-platform-compiling"></a>
+<h3>跨平台编译</h3>
+
+<div>
+标准Go编译器支持跨平台编译。通过设置<code>GOOS</code>和<code>GOARCH</code>两个环境变量，我们可以使用<code>go build</code>命令在Linux系统中编译出Windows和Mac程序，反之亦然。
+请阅读下面的代码获取详情：
+<ul>
+<li>
+	<a href="https://github.com/golang/go/wiki/WindowsCrossCompiling">在Linux上编译Windows程序</a>
+</li>
+<li>
+	<a href="https://golang.google.cn/doc/install/source#environment">目前支持的操作系统和编译架构</a>.
+</li>
+</ul>
+
+特别地，自从G0 1.11，标准Go编译器开始支持WebAssembly做为一种新的架构。请阅读<a href="https://github.com/golang/go/wiki/WebAssembly">此篇维基文章</a>获取详情。
+</div>
+
+<h3>编译器指示（compiler directive）</h3>
+
+<p>
+标准Go编译器支持若干<a href="https://golang.google.cn/cmd/compile/#hdr-Compiler_Directives">编译器指示</a>。
+一个编译器指示以注释的形式<code>//go:DirectiveName args</code>出现。
+比如我们可以使用<a href="https://blog.golang.org/generate">go:generate</a>编译器指示来生成代码；
+或者使用Go 1.16版本引入<a href="https://golang.google.cn/pkg/embed/">go:embed</a>编译器指示来内嵌数据文件。
+</p>
+
+<h3>构建编译约束/标签（build constraint/tag）</h3>
+
+<p>
+我们可以使用<a href="https://golang.google.cn/pkg/go/build/">构建编译约束</a>（或称标签）来让编译器选择性地忽略某些源文件。
+选择标签可以出现在源代码文件中的最顶部，也可以出现在源代码文件名（不包含<code>.go</code>后缀）的结尾（并用下划线分隔开来）。
+注意：Go官方工具链1.17<a href="https://github.com/golang/go/issues/41184">引入的</a>新的<a href="https://go.googlesource.com/proposal/+/master/design/draft-gobuild.md"><code>//go:build</code>指示</a>将逐渐替代<code>// +build</code>构建编译约束。
+</p>
+
+<h3>更多的编译模式（build mode）</h3>
+
+<p>
+Go官方工具链中的<code>go build</code>命令支持更多的编译模式。
+运行<code>go help buildmode</code>可以列出所有支持的模式，或者查看<a href="https://golang.google.cn/cmd/go/#hdr-Build_modes">官方文档</a>来查看这些模式的解释说明。
+除了最常用的default模式，plugin（插件）模式可能是另一种用的较多的模式。
+我们可以使用<a href="https://golang.google.cn/pkg/plugin/"><code>plugin</code>标准库包</a>中的函数来加载和使用Go插件。
+</p>
+
+
+
+

@@ -1,0 +1,832 @@
+﻿<h1>类型内嵌</h1>
+
+<p>
+从<a href="struct.html">结构体</a>一文中，我们得知一个结构体类型可以拥有若干字段。
+每个字段由一个字段名和一个字段类型组成。事实上，有时，一个字段可以仅由一个字段类型组成。
+这样的字段声明方式称为类型内嵌（type embedding）。
+</p>
+
+<p>
+此篇文章将解释类型内嵌的目的和各种和类型内嵌相关的细节。
+</p>
+
+<h3>类型内嵌语法</h3>
+
+<div>
+
+下面是一个使用了类型内嵌的例子：
+<pre class="line-numbers"><code class="language-go">package main
+
+import "net/http"
+
+func main() {
+	type P = *bool
+	type M = map[int]int
+	var x struct {
+		string // 一个具名非指针类型
+		error  // 一个具名接口类型
+		*int   // 一个无名指针类型
+		P      // 一个无名指针类型的别名
+		M      // 一个无名类型的别名
+
+		http.Header // 一个具名映射类型
+	}
+	x.string = "Go"
+	x.error = nil
+	x.int = new(int)
+	x.P = new(bool)
+	x.M = make(M)
+	x.Header = http.Header{}
+}
+</code></pre>
+
+<p>
+在上面这个例子中，有六个类型被内嵌在了一个结构体类型中。每个类型内嵌形成了一个内嵌字段（embedded field）。
+</p>
+
+<p>
+因为历史原因，内嵌字段有时也称为匿名字段。但是，事实上，每个内嵌字段有一个（隐式的）名字。
+此字段的<a href="https://golang.google.cn/ref/spec#Qualified_identifiers">非限定（unqualified）</a>类型名即为此字段的名称。
+比如，上例中的六个内嵌字段的名称分别为<code>string</code>、<code>error</code>、<code>int</code>、<code>P</code>、<code>M</code>和<code>Header</code>。
+</p>
+</div>
+
+<a class="anchor" id="embeddable-types"></a>
+<h3>哪些类型可以被内嵌？</h3>
+
+<div>
+当前的Go白皮书（1.25）<a href="https://golang.google.cn/ref/spec#Struct_types">规定</a>：
+
+<blockquote style="margin-top:0px;margin-bottom:0px;">
+<small>
+	An embedded field must be specified as a type name <code>T</code>
+	or as a pointer to a non-interface type name <code>*T</code>,
+	and <code>T</code> itself may not be a pointer type.
+</small>
+</blockquote>
+
+翻译过来：
+
+<blockquote style="margin-top:0px;margin-bottom:0px;">
+<small>
+一个内嵌字段必须被声明为形式<code>T</code>或者一个基类型为非接口类型的指针类型<code>*T</code>，其中<code>T</code>为一个类型名但是<code>T</code>不能表示一个指针类型。
+</small>
+</blockquote>
+
+<p>
+此规则描述在Go 1.9之前是精确的。但是随着从Go 1.9引入的自定义类型别名概念，此描述<a href="https://github.com/golang/go/issues/22005">有些过时和不太准确了</a>。
+比如，此描述没有包括上一节的例子中的<code>P</code>内嵌字段的情形。
+</p>
+
+这里，本文试图使用一个更精确的描述：
+<ul>
+<li>
+	一个类型名<code>T</code>只有在它既不表示一个具名指针类型也不表示一个基类型为指针类型或者接口类型的指针类型的情况下才可以被用做内嵌字段。
+</li>
+<li>
+	一个指针类型<code>*T</code>只有在<code>T</code>为一个类型名并且<code>T</code>既不表示一个指针类型也不表示一个接口类型的时候才能被用做内嵌字段。
+</li>
+</ul>
+
+<!--
+这里，本文试图使用一个更精确的描述：
+<ul>
+<li>
+	一个类型名<code>T</code>只有在它不表示一个基类型为指针类型或者接口类型的指针类型的情况下在可以被用做内嵌字段。
+</li>
+<li>
+	一个指针类型<code>*T</code>只有在<code>T</code>为一个类型名并且<code>T</code>既不表示一个指针类型也不表示一个接口类型的时候才能被用做内嵌字段。
+</li>
+</ul>
+
+或者，我们也可以对Go白皮书中的描述略加修改：
+
+<div class="alert alert-warning">
+一个内嵌字段必须被声明为形式<code>T</code>或者<code>*T</code>，其中<code>T</code>为一个类型名并且<code>T</code>和<code>*T</code>不能表示基类型为指针类型或者接口类型的指针类型。
+</div>
+-->
+
+<!--
+<p>
+上面列出的哪些类型可以被内嵌的规则有些过度严格和不必要的复杂，这使得很难将这些规则描述得既简单又清晰。
+看上去这些规则的目的是为了避免内嵌方法集肯定为空的类型，但是，同时这些规则也允许内嵌很多方法集肯定为空的类型。比如内置基本类型和很多无名类型的别名。
+曾有<a href="https://github.com/golang/go/issues/24062">一个提议</a>建议将这些规则简单化，但是此提议被否决了。
+此提议建议将这些规则简化为：<b>一个类型名（可以带包限定前缀）可以被内嵌在一个结构体类型中</b>。
+</p>
+-->
+
+下面列出了一些可以被或不可以被内嵌的类型或别名：
+<pre class="line-numbers"><code class="language-go">type Encoder interface {Encode([]byte) []byte}
+type Person struct {name string; age int}
+type Alias = struct {name string; age int}
+type AliasPtr = *struct {name string; age int}
+type IntPtr *int
+type AliasPP = *IntPtr
+
+// 这些类型或别名都可以被内嵌。
+Encoder
+Person
+*Person
+Alias
+*Alias
+AliasPtr
+int
+*int
+
+// 这些类型或别名都不能被内嵌。
+AliasPP          // 基类型为一个指针类型
+*Encoder         // 基类型为一个接口类型
+*AliasPtr        // 基类型为一个指针类型
+IntPtr           // 具名指针类型
+*IntPtr          // 基类型为一个指针类型
+*chan int        // 基类型为一个无名类型
+struct {age int} // 无名非指针类型
+map[string]int   // 无名非指针类型
+[]int64          // 无名非指针类型
+func()           // 无名非指针类型
+</code></pre>
+
+<p>
+</p>
+
+<p>
+一个结构体类型中不允许有两个同名字段，此规则对匿名字段同样适用。
+根据上述内嵌字段的隐含名称规则，一个无名指针类型不能和它的基类型同时内嵌在同一个结构体类型中。
+比如，<code>int</code>和<code>*int</code>类型不能同时内嵌在同一个结构体类型中。
+</p>
+</div>
+
+<p>
+一个结构体类型不能内嵌（无论间接还是直接）它自己。
+</p>
+
+<p>
+一般说来，只有内嵌含有字段或者拥有方法的类型才有意义（后续几节将阐述原因），尽管很多既没有字段也没有方法的类型也可以被内嵌。
+</p>
+
+<h3>类型内嵌的意义是什么？</h3>
+
+<div>
+<p>
+类型内嵌的主要目的是为了将被内嵌类型的功能扩展到内嵌它的结构体类型中，从而我们不必再为此结构体类型重复实现被内嵌类型的功能。
+</p>
+
+很多其它流行面向对象的编程语言都是用继承来实现上述目的。两种实现方式有<a href="https://en.wikipedia.org/wiki/Composition_over_inheritance">它们各自的利弊</a>。
+这里，此篇文章将不讨论哪种方式更好一些，我们只需知道Go选择了类型内嵌这种方式。
+这两种方式有一个很大的不同点：
+<ul>
+<li>
+	如果类型<code>T</code>继承了另外一个类型，则类型<code>T</code>获取了另外一个类型的能力。
+	同时，一个<code>T</code>类型的值也可以被当作另外一个类型的值来使用。
+</li>
+<li>
+	如果一个类型<code>T</code>内嵌了另外一个类型，则另外一个类型变成了类型<code>T</code>的一部分。
+	类型<code>T</code>获取了另外一个类型的能力，但是<code>T</code>类型的任何值都不能被当作另外一个类型的值来使用。
+</li>
+</ul>
+
+下面是一个展示了如何通过类型内嵌来扩展类型功能的例子：
+<pre class="line-numbers"><code class="language-go">package main
+
+import "fmt"
+
+type Person struct {
+	Name string
+	Age  int
+}
+func (p Person) PrintName() {
+	fmt.Println("Name:", p.Name)
+}
+func (p *Person) SetAge(age int) {
+	p.Age = age
+}
+
+type Singer struct {
+	Person // 通过内嵌Person类型来扩展之
+	works  []string
+}
+
+func main() {
+	var gaga = Singer{Person: Person{"Gaga", 30}}
+	gaga.PrintName() // Name: Gaga
+	gaga.Name = "Lady Gaga"
+	(&gaga).SetAge(31)
+	(&gaga).PrintName()   // Name: Lady Gaga
+	fmt.Println(gaga.Age) // 31
+}
+</code></pre>
+
+<p>
+从上例中，当类型<code>Singer</code>内嵌了类型<code>Person</code>之后，看上去类型<code>Singer</code>获取了类型<code>Person</code>所有的字段和方法，
+并且类型<code>*Singer</code>获取了类型<code>*Person</code>所有的方法。此结论是否正确？随后几节将给出答案。
+</p>
+
+注意，类型<code>Singer</code>的一个值不能被当作<code>Person</code>类型的值用。下面的代码编译不通过：
+<pre class="line-numbers"><code class="language-go">var gaga = Singer{}
+var _ Person = gaga
+</code></pre>
+
+<p>
+</p>
+
+</div>
+
+<h3>当一个结构体类型内嵌了另一个类型，此结构体类型是否获取了被内嵌类型的字段和方法？</h3>
+
+<div>
+下面这个程序使用<a href="reflection.html">反射</a>列出了上一节的例子中的<code>Singer</code>类型的字段和方法，以及<code>*Singer</code>类型的方法。
+
+<pre class="line-numbers"><code class="language-go">package main
+
+import (
+	"fmt"
+	"reflect"
+)
+
+... // 为节省篇幅，上一个例子中声明的类型在这里省略了。
+
+func main() {
+	t := reflect.TypeOf(Singer{}) // the Singer type
+	fmt.Println(t, "has", t.NumField(), "fields:")
+	for i := 0; i < t.NumField(); i++ {
+		fmt.Print(" field#", i, ": ", t.Field(i).Name, "\n")
+	}
+	fmt.Println(t, "has", t.NumMethod(), "methods:")
+	for i := 0; i < t.NumMethod(); i++ {
+		fmt.Print(" method#", i, ": ", t.Method(i).Name, "\n")
+	}
+
+	pt := reflect.TypeOf(&Singer{}) // the *Singer type
+	fmt.Println(pt, "has", pt.NumMethod(), "methods:")
+	for i := 0; i < pt.NumMethod(); i++ {
+		fmt.Print(" method#", i, ": ", pt.Method(i).Name, "\n")
+	}
+}
+</code></pre>
+
+输出结果：
+<pre class="output"><code>main.Singer has 2 fields:
+ field#0: Person
+ field#1: works
+main.Singer has 1 methods:
+ method#0: PrintName
+*main.Singer has 2 methods:
+ method#0: PrintName
+ method#1: SetAge
+</code></pre>
+
+<p>
+</p>
+
+<p>
+从此输出结果中，我们可以看出类型<code>Singer</code>确实拥有一个<code>PrintName</code>方法，以及类型<code>*Singer</code>确实拥有两个方法：<code>PrintName</code>和<code>SetAge</code>。
+但是类型<code>Singer</code>并不拥有一个<code>Name</code>字段。那么为什么选择器表达式<code>gaga.Name</code>是合法的呢？
+毕竟<code>gaga</code>是<code>Singer</code>类型的一个值。
+请阅读下一节以获取原因。
+</p>
+</div>
+
+<a class="anchor" id="shorten-form"></a>
+<h3>选择器的缩写形式</h3>
+
+<p>
+从前面的<a href="struct.html">结构体</a>和<a href="method.html">方法</a>两篇文章中，我们得知，对于一个值<code>x</code>，<code>x.y</code>称为一个选择器，其中<code>y</code>可以是一个字段名或者方法名。
+如果<code>y</code>是一个字段名，那么<code>x</code>必须为一个结构体值或者结构体指针值。
+一个选择器是一个表达式，它表示着一个值。
+如果选择器<code>x.y</code>表示一个字段，此字段也可能拥有自己的字段（如果此字段的类型为另一个结构体类型）和方法，比如<code>x.y.z</code>，其中<code>z</code>可以是一个字段名，也可是一个方法名。
+</p>
+
+<p>
+在Go中，（不考虑下面将要介绍的选择器碰撞和遮挡），<b><i>如果一个选择器中的中部某项对应着一个内嵌字段，则此项可被省略掉</i></b>。
+因此内嵌字段又被称为匿名字段。
+</p>
+
+<div>
+一个例子：
+<pre class="line-numbers"><code class="language-go">package main
+
+type A struct {
+	x int
+}
+
+func (a A) MethodA() {}
+
+type B struct {
+	*A
+}
+
+type C struct {
+	B
+}
+
+func main() {
+	var c = &C{B: B{A: &A{FieldX: 5}}}
+
+	// 这几行是等价的。
+	_ = c.B.A.FieldX
+	_ = c.B.FieldX
+	_ = c.A.FieldX // A是类型C的一个提升字段
+	_ = c.FieldX   // FieldX也是一个提升字段
+
+	// 这几行是等价的。
+	c.B.A.MethodA()
+	c.B.MethodA()
+	c.A.MethodA()
+	c.MethodA() // MethodA是类型C的一个提升方法
+}
+</code></pre>
+
+<p>
+这就是为什么在上一节的例子中选择器表达式<code>gaga.Name</code>是合法的，
+因为它只不过是<code>gaga.Person.Name</code>的一个缩写形式。
+</p>
+
+<p>
+类似的，选择器<code>gaga.PrintName</code>可以被看作是<code>gaga.Person.PrintName</code>的缩写形式。
+但是，我们也可以不把它看作是一个缩写。毕竟，类型<code>Singer</code>确实拥有一个<code>PrintName</code>方法，
+尽管此方法是被隐式声明的（请阅读下下节以获得详情）。
+同样的原因，选择器<code>(&amp;gaga).PrintName</code>和<code>(&amp;gaga).SetAge</code>可以看作（也可以不看作）是<code>(&amp;gaga.Person).PrintName</code>和<code>(&amp;gaga.Person).SetAge</code>的缩写。
+</p>
+
+<p>
+<code>Name</code>被称为类型<code>Singer</code>的一个提升字段（promoted field）。
+<code>PrintName</code>被称为类型<code>Singer</code>的一个提升方法（promoted method）。
+</p>
+
+<p>
+注意：我们也可以使用选择器<code>gaga.SetAge</code>，但是只有在<code>gaga</code>是一个可寻址的类型为<code>Singer</code>的值的情况下。
+它只不过是<code>(&amp;gaga).SetAge</code>的一个<a href="method.html#call">语法糖</a>。
+</p>
+
+<p>
+在上面的例子中，<code>c.B.A.FieldX</code>称为选择器表达式<code>c.FieldX</code>、<code>c.B.FieldX</code>和<code>c.A.FieldX</code>的完整形式。
+类似的，<code>c.B.A.MethodA</code>可以称为<code>c.MethodA</code>、<code>c.B.MethodA</code>和<code>c.A.MethodA</code>的完整形式。
+</p>
+
+<p>
+如果一个选择器的完整形式中的所有中部项均对应着一个内嵌字段，则中部项的数量称为此选择器的深度。
+比如，上面的例子中的选择器<code>c.MethodA</code>的深度为<i>2</i>，因为此选择器的完整形式为<code>c.B.A.MethodA</code>，并且<code>B</code>和<code>A</code>都对应着一个内嵌字段。
+</p>
+</div>
+
+<a class="anchor" id="selector-shadow-and-collide"></a>
+<h3>选择器遮挡和碰撞</h3>
+
+<div>
+一个值<code>x</code>（这里我们总认为它是可寻址的）可能同时拥有多个最后一项相同的选择器，并且这些选择器的中间项均对应着一个内嵌字段。
+对于这种情形（假设最后一项为<code>y</code>）：
+<ul>
+<li>
+	只有深度最浅的一个完整形式的选择器（并且最浅者只有一个）可以被缩写为<code>x.y</code>。
+	换句话说，<code>x.y</code>表示深度最浅的一个选择器。其它完整形式的选择器被此最浅者所遮挡（压制）。
+</li>
+<li>
+	如果有多个完整形式的选择器同时拥有最浅深度，则任何完整形式的选择器都不能被缩写为<code>x.y</code>。
+	我们称这些同时拥有最浅深度的完整形式的选择器发生了碰撞。
+</li>
+</ul>
+
+<p>
+如果一个方法选择器被另一个方法选择器所遮挡，并且它们对应的方法描述是一致的，那么我们可以说第一个方法被第二个覆盖（overridden）了。
+</p>
+
+举个例子，假设<code>A</code>、<code>B</code>和<code>C</code>为三个<a href="type-system-overview.html#type-definition">定义类型</a>：
+
+<pre class="line-numbers"><code class="language-go">type A struct {
+	x string
+}
+func (A) y(int) bool {
+	return false
+}
+
+type B struct {
+	y bool
+}
+func (B) x(string) {}
+
+type C struct {
+	B
+}
+</code></pre>
+
+下面这段代码编译不通过，原因是选择器<code>v1.A.x</code>和<code>v1.B.x</code>的深度一样，所以它们发生了碰撞，结果导致它们都不能被缩写为<code>v1.x</code>。
+同样的情况发生在选择器<code>v1.A.y</code>和<code>v1.B.y</code>身上。
+
+<pre class="line-numbers"><code class="language-go">var v1 struct {
+	A
+	B
+}
+
+func f1() {
+	_ = v1.x // error: 模棱两可的v1.x
+	_ = v1.y // error: 模棱两可的v1.y
+}
+</code></pre>
+
+<p>
+</p>
+
+下面的代码编译没问题。选择器<code>v2.C.B.x</code>被另一个选择器<code>v2.A.x</code>遮挡了，所以<code>v2.x</code>实际上是选择器<code>v2.A.x</code>的缩写形式。
+因为同样的原因，<code>v2.y</code>是选择器<code>v2.A.y</code>（而不是选择器<code>v2.C.B.y</code>）的缩写形式。
+
+<pre class="line-numbers"><code class="language-go">var v2 struct {
+	A
+	C
+}
+
+func f2() {
+	fmt.Printf("%T \n", v2.x) // string
+	fmt.Printf("%T \n", v2.y) // func(int) bool
+}
+</code></pre>
+
+<p>
+</p>
+
+一个被遮挡或者碰撞的选择器并不妨碍更深层的选择器被提升，如下例所示中的<code>.M</code>和<code>.z</code>：
+
+<pre class="line-numbers"><code class="language-go">package main
+
+type x string
+func (x) M() {}
+
+type y struct {
+	z byte
+}
+
+type A struct {
+	x
+}
+func (A) y(int) bool {
+	return false
+}
+
+type B struct {
+	y
+}
+func (B) x(string) {}
+
+func main() {
+	var v struct {
+		A
+		B
+	}
+	//_ = v.x // error: 模棱两可的v.x
+	//_ = v.y // error: 模棱两可的v.y
+	_ = v.M // ok. <=> v.A.x.M
+	_ = v.z // ok. <=> v.B.y.z
+}
+</code></pre>
+
+<p>
+</p>
+
+一个不寻常的但需要注意的细节是：来自不同库包的两个非导出方法（或者字段）将总是被认为是两个不同的标识符，即使它们的名字完全一致。
+因此，当它们的属主类型被同时内嵌在同一个结构体类型中的时候，它们绝对不会相互碰撞或者遮挡。
+举个例子，下面这个含有两个库包的Go程序编译和运行都没问题。
+但是，如果将其中所有出现的<code>m()</code>改为<code>M()</code>，则此程序将编译不过。
+原因是<code>A.M</code>和<code>B.M</code>碰撞了，导致<code>c.M</code>为一个非法的选择器。
+
+<pre class="line-numbers"><code class="language-go">package foo // import "x.y/foo"
+
+import "fmt"
+
+type A struct {
+	n int
+}
+
+func (a A) m() {
+	fmt.Println("A", a.n)
+}
+
+type I interface {
+	m()
+}
+
+func Bar(i I) {
+	i.m()
+}
+</code></pre>
+
+<pre class="line-numbers"><code class="language-go">package main
+
+import "fmt"
+import "x.y/foo"
+
+type B struct {
+	n bool
+}
+
+func (b B) m() {
+	fmt.Println("B", b.n)
+}
+
+type C struct{
+	foo.A
+	B
+}
+
+func main() {
+	var c C
+	c.m()      // B false
+	foo.Bar(c) // A 0
+}
+</code></pre>
+
+<p>
+</p>
+
+</div>
+
+<h3>为内嵌了其它类型的结构体类型声明的隐式方法</h3>
+
+<div>
+
+<p>
+上面已经提到过，类型<code>Singer</code>和<code>*Singer</code>都有一个<code>PrintName</code>方法，并且类型<code>*Singer</code>还有一个<code>SetAge</code>方法。
+但是，我们从没有为这两个类型声明过这几个方法。这几个方法从哪来的呢？
+</p>
+
+事实上，假设结构体类型<code>S</code>内嵌了一个类型（或者类型别名）<code>T</code>，并且此内嵌是合法的，
+<ul>
+<li>
+	对内嵌类型<code>T</code>的每一个方法，如果此方法对应的选择器既不和其它选择器碰撞也未被其它选择器遮挡，则编译器将会隐式地为结构体类型<code>S</code>声明一个同样描述的方法。
+	继而，编译器也将为指针类型<code>*S</code><a href="method.html#implicit-pointer-methods">隐式声明</a>一个相应的方法。
+</li>
+<li>
+	对类型<code>*T</code>的每一个方法，如果此方法对应的选择器既不和其它选择器碰撞也未被其它选择器遮挡，则编译器将会隐式地为类型<code>*S</code>声明一个同样描述的方法。
+</li>
+</ul>
+
+简单说来，
+<ul>
+<li>
+	类型<code>struct{T}</code>和<code>*struct{T}</code>均将获取类型<code>T</code>的所有方法。
+</li>
+<li>
+	类型<code>*struct{T}</code>、<code>struct{*T}</code>和<code>*struct{*T}</code>都将获取类型<code>*T</code>的所有方法。
+</li>
+</ul>
+
+下面展示了编译器为类型<code>Singer</code>和<code>*Singer</code>隐式声明的三个（提升）方法：
+
+<pre class="line-numbers"><code class="language-go">// 注意：这些声明不是合法的Go语法。这里这样表示只是为了
+// 解释目的。它们有助于解释提升方法值是如何被估值的。
+func (s Singer) PrintName = s.Person.PrintName
+func (s *Singer) PrintName = s.Person.PrintName
+func (s *Singer) SetAge = s.Person.SetAge
+</code></pre>
+
+<p>
+右边的部分为各个提升方法相应的完整形式选择器形式。
+</p>
+
+<p>
+从<a href="method.html">方法</a>一文中，我们得知我们不能为无名的结构体类型（和基类型为无名结构体类型的指针类型）声明方法。
+但是，通过类型内嵌，这样的类型也可以拥有方法。
+</p>
+
+<!--
+下面是另一个证明了类型内嵌导致了一些方法被隐式声明的例子：
+<pre class="line-numbers"><code class="language-go">package main
+
+import "fmt"
+import "reflect"
+
+type F func(int) bool
+func (f F) Validate(n int) bool {
+	return f(n)
+}
+func (f *F) Modify(f2 F) {
+	*f = f2
+}
+
+type B bool
+func (b B) IsTrue() bool {
+	return bool(b)
+}
+func (pb *B) Invert() {
+	*pb = !*pb
+}
+
+type I interface {
+	Load()
+	Save()
+}
+
+func PrintTypeMethods(t reflect.Type) {
+	fmt.Println(t, "has", t.NumMethod(), "methods:")
+	for i := 0; i < t.NumMethod(); i++ {
+		fmt.Print(" method#", i, ": ", t.Method(i).Name, "\n")
+	}
+}
+
+func main() {
+	var s struct {
+		F
+		*B
+		I
+	}
+
+	PrintTypeMethods(reflect.TypeOf(s))
+	fmt.Println()
+	PrintTypeMethods(reflect.TypeOf(&s))
+}
+</code></pre>
+
+输出结果：
+<pre class="output"><code>struct { main.F; *main.B; main.I } has 5 methods:
+ method#0: Invert
+ method#1: IsTrue
+ method#2: Load
+ method#3: Save
+ method#4: Validate
+
+*struct { main.F; *main.B; main.I } has 6 methods:
+ method#0: Invert
+ method#1: IsTrue
+ method#2: Load
+ method#3: Modify
+ method#4: Save
+ method#5: Validate
+</code></pre>
+
+<p>
+</p>
+-->
+
+<p>
+如果一个结构体类型内嵌了一个实现了一个接口类型的类型（此内嵌类型可以是此接口类型自己），则一般说来，此结构体类型也实现了此接口类型，除非发生了选择器碰撞和遮挡。
+比如，上例中的结构体类型和以它为基类型的指针类型均实现了接口类型<code>I</code>。
+</p>
+
+请注意：一个类型将只会获取它（直接或者间接）内嵌了的类型的方法。
+换句话说，一个类型的方法集由为类型直接（显式或者隐式）声明的方法和此类型的底层类型的方法集组成。
+比如，在下面的例子中，
+<ul>
+<li>
+	类型<code>Age</code>没有方法，因为代码中既没有为它声明任何方法，它也没有内嵌任何类型，。
+</li>
+<li>
+	类型<code>X</code>有两个方法：<code>IsOdd</code>和<code>Double</code>。
+	其中<code>IsOdd</code>方法是通过内嵌类型<code>MyInt</code>而得来的。
+</li>
+<li>
+	类型<code>Y</code>没有方法，因为它所内嵌的类型<code>Age</code>没有方法，另外代码中也没有为它声明任何方法。
+</li>
+<li>
+	类型<code>Z</code>只有一个方法：<code>IsOdd</code>。
+	此方法是通过内嵌类型<code>MyInt</code>而得来的。
+	它没有获取到类型<code>X</code>的<code>Double</code>方法，因为它并没有内嵌类型<code>X</code>。
+</li>
+</ul>
+
+<pre class="line-numbers"><code class="language-go">type MyInt int
+func (mi MyInt) IsOdd() bool {
+	return mi%2 == 1
+}
+
+type Age MyInt
+
+type X struct {
+	MyInt
+}
+func (x X) Double() MyInt {
+	return x.MyInt + x.MyInt
+}
+
+type Y struct {
+	Age
+}
+
+type Z X
+</code></pre>
+
+<p>
+</p>
+
+</div>
+
+<a class="anchor" id="implicit-method-evaluation"></a>
+<h3>提升方法值的正规化和估值</h3>
+
+<div>
+
+<p>
+假设<code>v.m</code>是一个合法的提升方法表达式，在编译时刻，编译器将把此提升方法表达式正规化。
+正规化过程分为两步：首先找出此提升方法表达式的完整形式；然后将此完整形式中的隐式取地址和解引用操作均转换为显式操作。
+</p>
+
+<p>
+和其它<a href="method.html#method-value-evaluation">方法值估值</a>的规则一样，对于一个已经正规化的方法值表达式<code>v.m</code>，在运行时刻，当<code>v.m</code>被估值的时候，属主实参<code>v</code>的估值结果的一个副本将被存储下来以供后面调用此方法值的时候使用。
+</p>
+
+以下面的代码为例：
+<ul>
+<li>
+	提升方法表达式<code>s.M1</code>的完整形式为<code>s.T.X.M1</code>。
+	将此完整形式中的隐式取地址和解引用操作转换为显式操作之后的结果为<code>(*s.T).X.M1</code>。
+	在运行时刻，属主实参<code>(*s.T).X</code>被估值并且估值结果的一个副本被存储下来以供后用。
+	此估值结果为<code>1</code>，这就是为什么调用<code>f()</code>总是打印出<code>1</code>。
+</li>
+<li>
+	提升方法表达式<code>s.M2</code>的完整形式为<code>s.T.X.M2</code>。
+	将此完整形式中的隐式取地址和解引用操作转换为显式操作之后的结果为<code>(&amp;(*s.T).X).M2</code>。
+	在运行时刻，属主实参<code>&amp;(*s.T).X</code>被估值并且估值结果的一个副本被存储下来以供后用。
+	此估值结果为提升字段<code>s.X</code>（也就是<code>(*s.T).X</code>）的地址。
+	任何对<code>s.X</code>的修改都可以通过解引用此地址而反映出来，但是对<code>s.T</code>的修改是不会通过此地址反映出来的。
+	这就是为什么两个<code>g()</code>调用都打印出了<code>2</code>。
+</li>
+</ul>
+
+<pre class="line-numbers"><code class="language-go">package main
+
+import "fmt"
+
+type X int
+
+func (x X) M1() {
+	fmt.Println(x)
+}
+
+func (x *X) M2() {
+	fmt.Println(*x)
+}
+
+type T struct { X }
+
+type S struct { *T }
+
+func main() {
+	var t = &T{X: 1}
+	var s = S{T: t}
+	var f = s.M1 // <=> (*s.T).X.M1
+	var g = s.M2 // <=> (&(*s.T).X).M2
+	s.X = 2
+	f() // 1
+	g() // 2
+	s.T = &T{X: 3}
+	f() // 1
+	g() // 2
+}
+</code></pre>
+
+<p>
+</p>
+
+</div>
+
+<h3>接口类型内嵌各种类型</h3>
+
+<p>
+接口类型可以内嵌各种类型。详情请阅读<a href="interface.html">接口</a>一文。
+</p>
+
+<!--
+
+<h3>Two Types Embedding Two Types Which Denote The Same Type But Have Different Names Are Two Distinct Types</h3>
+
+<div>
+
+For example,
+
+<pre class="line-numbers"><code class="language-go">
+</code></pre>
+<p>
+</p>
+</div>
+
+-->
+
+<a class="anchor" id="dead-loop-example"></a>
+<h3>一个有趣的类型内嵌的例子</h3>
+
+<div>
+在本文的最后，让我们来看一个有趣的例子。
+此例子程序将陷入死循环并会因堆栈溢出而崩溃退出。
+如果你已经理解了<a href="interface.html#polymorphism">多态</a>和类型内嵌，那么就不难理解为什么此程序将死循环。
+
+<pre class="line-numbers"><code class="language-go">package main
+
+type I interface {
+	m()
+}
+
+type T struct {
+	I
+}
+
+func main() {
+	var t T
+	var i = &t
+	t.I = i
+	i.m() // 将调用t.m()，然后再次调用i.m()，......
+}
+</code></pre>
+
+<p>
+</p>
+</div>
+
+
+

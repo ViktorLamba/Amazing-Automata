@@ -1,0 +1,1092 @@
+﻿<h1>非类型安全指针</h1>
+
+<p>
+我们已经从<a href="pointer.html">Go中的指针</a>一文中学习到关于指针的各种概念和规则。
+从那篇文章中，我们得知，相对于C指针，Go指针有很多限制。
+比如，Go指针不支持算术运算，并且对于任意两个指针值，很可能它们不能转换到对方的类型。
+</p>
+
+<p>
+事实上，在那篇文章中解释的指针的完整称呼应该为类型安全指针。
+虽然类型安全指针有助于我们轻松写出安全的代码，但是有时候施加在类型安全指针上的限制也确实导致我们不能写出最高效的代码。
+</p>
+
+<p>
+实际上，Go也支持限制较少的非类型安全指针。
+非类型安全指针和C指针类似，它们都很强大，但同时也都很危险。
+在某些情形下，通过非类型安全指针的帮助，我们可以写出效率更高的代码；
+但另一方面，使用非类型安全指针也导致我们可能轻易地写出潜在的不安全的代码，这些潜在的不安全点很难在它们产生危害之前被及时发现。
+</p>
+
+<p>
+使用非类型安全指针的另外一个较大的风险是Go中目前提供的非类型安全指针机制并不受到<a href="https://golang.google.cn/doc/go1compat">Go 1 兼容性保证</a>的保护。
+使用了非类型安全指针的代码可能从今后的某个Go版本开始将不再能编译通过，或者运行行为发生了变化。
+</p>
+
+<p>
+如果出于种种原因，你确实希望在你的代码中使用非类型安全指针，你不仅需要提防上述风险，你还需遵守Go官方文档中列出的非类型安全指针使用模式，并清楚地知晓使用非类型安全指针带来的效果。否则，你很难使用非类型安全指针写出安全的代码。
+</p>
+
+<h3>关于<code>unsafe</code>标准库包</h3>
+
+<div>
+非类型安全指针在Go中为<a href="type-system-overview.html#type-kinds">一种</a>特别的类型。
+我们必须引入<a href="https://golang.google.cn/pkg/unsafe/"><code>unsafe</code>标准库包</a>来使用非类型安全指针。
+非类型安全指针<code>unsafe.Pointer</code>被声明定义为：
+
+<pre class="disable-line-numbers111"><code class="language-go">type Pointer *ArbitraryType
+</code></pre>
+
+<p>
+当然，这不是一个普通的类型定义。这里的<code>ArbitraryType</code>仅仅是暗示<code>unsafe.Pointer</code>类型值可以被转换为任意类型安全指针（反之亦然）。换句话说，<code>unsafe.Pointer</code>类似于C语言中的<code>void*</code>。
+</p>
+
+<p>
+非类型安全指针是指底层类型为<code>unsafe.Pointer</code>的类型。
+</p>
+
+<p>
+非类型安全指针的零值也使用预声明的<code>nil</code>标识符来表示。
+</p>
+
+在Go 1.17之前，<code>unsafe</code>标准库包只提供了三个函数：
+<ul>
+<li>
+	<code>func Alignof(variable ArbitraryType) uintptr</code>。
+	此函数用来取得一个值在内存中的地址对齐保证（address alignment guarantee）。
+	注意，同一个类型的值做为结构体字段和非结构体字段时地址对齐保证可能是不同的。
+	当然，这和具体编译器的实现有关。对于目前的标准编译器，同一个类型的值做为结构体字段和非结构体字段时的地址对齐保证总是相同的。
+	gccgo编译器对这两种情形是区别对待的。
+
+</li>
+<li>
+	<code>func Offsetof(selector ArbitraryType) uintptr</code>。
+	此函数用来取得一个结构体值的某个字段的地址相对于此结构体值的地址的偏移。
+	在一个程序中，对于同一个结构体类型的不同值的对应相同字段，此函数的返回值总是相同的。
+</li>
+<li>
+	<code>func Sizeof(variable ArbitraryType) uintptr</code>。
+	此函数用来取得一个值的尺寸（亦即此值的类型的尺寸）。
+	在一个程序中，对于同一个类型的不同值，此函数的返回值总是相同的。
+</li>
+</ul>
+
+
+注意：
+<ul>
+<li>
+	这三个函数的返回值的类型均为内置类型<code>uintptr</code>。下面我们将了解到<code>uintptr</code>类型的值可以转换为非类型安全指针（反之亦然）。
+</li>
+<li>
+	尽管这三个函数之一的任何调用的返回结果在同一个编译好的程序中总是一致的，但是这样的一个调用在不同架构的操作系统中（或者使用不同的编译器编译时）的返回值可能是不一样的。
+</li>
+<li>
+	这三个函数的调用总是在编译时刻被估值，估值结果为类型为<code>uintptr</code>的常量。
+</li>
+<li>
+	传递给<code>Offsetof</code>函数的实参必须为一个字段选择器形式<code>value.field</code>。
+	此选择器可以表示一个内嵌字段，但此选择器的路径中不能包含指针类型的<a href="type-embedding.html#shorten-form">隐式字段</a>。
+</li>
+</ul>
+
+一个使用了这三个函数的例子：
+<pre class="line-numbers"><code class="language-go">package main
+
+import "fmt"
+import "unsafe"
+
+func main() {
+	var x struct {
+		a int64
+		b bool
+		c string
+	}
+	const M, N = unsafe.Sizeof(x.c), unsafe.Sizeof(x)
+	fmt.Println(M, N) // 16 32
+
+	fmt.Println(unsafe.Alignof(x.a)) // 8
+	fmt.Println(unsafe.Alignof(x.b)) // 1
+	fmt.Println(unsafe.Alignof(x.c)) // 8
+
+	fmt.Println(unsafe.Offsetof(x.a)) // 0
+	fmt.Println(unsafe.Offsetof(x.b)) // 8
+	fmt.Println(unsafe.Offsetof(x.c)) // 16
+}
+</code></pre>
+
+<p>
+</p>
+
+下面是一个展示了上面提到的最后一个注意点的例子：
+
+<pre class="line-numbers"><code class="language-go">package main
+
+import "fmt"
+import "unsafe"
+
+func main() {
+	type T struct {
+		c string
+	}
+	type S struct {
+		b bool
+	}
+	var x struct {
+		a int64
+		*S
+		T
+	}
+
+	fmt.Println(unsafe.Offsetof(x.a)) // 0
+	
+	fmt.Println(unsafe.Offsetof(x.S)) // 8
+	fmt.Println(unsafe.Offsetof(x.T)) // 16
+	
+	// 此行可以编译过，因为选择器x.c中的隐含字段T为非指针。
+	fmt.Println(unsafe.Offsetof(x.c)) // 16
+	
+	// 此行编译不过，因为选择器x.b中的隐含字段S为指针。
+	//fmt.Println(unsafe.Offsetof(x.b)) // error
+	
+	// 此行可以编译过，但是它将打印出字段b在x.S中的偏移量.
+	fmt.Println(unsafe.Offsetof(x.S.b)) // 0
+}
+</code></pre>
+
+<p>
+注意，上面程序中的注释所暗示的输出结果是此程序在AMD64架构上使用标准编译器1.25版本编译时的结果。
+</p>
+
+<p>
+<code>unsafe</code>包提供的这三个函数看上去并不怎么危险。
+它们的原型在以后的Go 1版本中<a href="https://groups.google.com/g/golang-nuts/c/Pi7VveWDUPc">几乎不可能会发生改变</a>。
+Rob Pike甚至曾经<a href="https://github.com/golang/go/issues/5602">将这几个函数挪到其它包中</a>。
+<code>unsafe</code>包的危险性基本上来自于非类型安全指针。它们和C指针一样危险，这是Go安全指针千方百计设法去避免的。
+</p>
+
+Go 1.17引入了一个新类型和两个新函数。
+此新类型为<code>IntegerType</code>。它的定义如下。
+此类型不代表着一个具体类型，它只是表示任意整数类型（有点泛型的意思）。
+<pre class="disable-line-numbers111"><code class="language-go">type IntegerType int
+</code></pre>
+
+Go 1.17引入的两个函数为：
+<ul>
+<li>
+	<code>func Add(ptr Pointer, len IntegerType) Pointer</code>。
+	此函数在一个（非安全）指针表示的地址上添加一个偏移量，然后返回表示新地址的一个指针。
+	此函数以一种更正规的形式部分地覆盖了下面将要介绍的使用模式3中展示的合法用法。
+</li>
+<li>
+	<code>func Slice(ptr *ArbitraryType, len IntegerType) []ArbitraryType</code>。
+	此函数用来从一个任意（安全）指针派生出一个指定长度的切片。
+</li>
+</ul>
+
+Go 1.20进一步引入了三个函数：
+<ul>
+<li>
+	<code>func String(ptr *byte, len IntegerType) string</code>。
+	此函数用来从一个任意（安全）<code>byte</code>指针派生出一个指定长度的字符串。
+</li>
+<li>
+	<code>func StringData(str string) *byte</code>。
+	此函数用来获取一个字符串底层字节序列中的第一个<code>byte</code>的指针。
+</li>
+<li>
+	<code>func SliceData(slice []ArbitraryType) *ArbitraryType</code>。
+	此函数用来获取一个切片底层元素序列中的第一个元素的指针。
+</li>
+</ul>
+
+Go 1.17之后引入的这些函数具有一定的危险性，需谨慎使用。
+下面是使用了Go 1.17引入的两个函数的一个例子。
+
+<pre class="line-numbers"><code class="language-go">package main
+
+import (
+	"fmt"
+	"unsafe"
+)
+
+func main() {
+	a := [16]int{3: 3, 9: 9, 11: 11}
+	fmt.Println(a)
+	eleSize := int(unsafe.Sizeof(a[0]))
+	p9 := &a[9]
+	up9 := unsafe.Pointer(p9)
+	p3 := (*int)(unsafe.Add(up9, -6 * eleSize))
+	fmt.Println(*p3) // 3
+	s := unsafe.Slice(p9, 5)[:3]
+	fmt.Println(s) // [9 0 11]
+	fmt.Println(len(s), cap(s)) // 3 5
+
+	t := unsafe.Slice((*int)(nil), 0)
+	fmt.Println(t == nil) // true
+
+	// 下面是两个不正确的调用。因为它们
+	// 的返回结果引用了未知的内存块。
+	_ = unsafe.Add(up9, 7 * eleSize)
+	_ = unsafe.Slice(p9, 8)
+}
+</code></pre>
+
+<p>
+</p>
+
+下面这两个函数使用了非类型安全的方式实现了字符串和字节切片之间的类型转换。
+和类型安全方式相比，它们不用复制字符串和字节切片的底层字节序列，因此效率更高。
+
+<pre class="line-numbers"><code class="language-go">import "unsafe"
+
+func String2ByteSlice(str string) []byte {
+	if str == "" {
+		return nil
+	}
+	return unsafe.Slice(unsafe.StringData(str), len(str))
+}
+
+func ByteSlice2String(bs []byte) string {
+	if len(bs) == 0 {
+		return ""
+	}
+	return unsafe.String(unsafe.SliceData(bs), len(bs))
+}
+</code></pre>
+
+</div>
+
+<!--
+todo: remove most this section, except the Ian confirmed points,
+      move the confirmed points to the last section.
+
+<h3>The Warnings From Go Official Documentation</h3>
+
+<div>
+
+The <code>unsafe</code> package documentation
+<a href="https://golang.google.cn/pkg/unsafe/#pkg-overview">says</a>:
+
+<div class="alert alert-success">
+Packages that import <code>unsafe</code> may be non-portable
+and are not protected by the Go 1 compatibility guidelines.
+</div>
+
+And the <a href="https://golang.google.cn/doc/go1compat">Go 1 compatibility guidelines</a> says:
+<div class="alert alert-success">
+Packages that import <code>unsafe</code> may depend on internal properties of the Go implementation.
+We reserve the right to make changes to the implementation that may break such programs.
+</div>
+
+However, Ian, one of the core member of Go team,
+has <a href="https://groups.google.com/forum/?_escaped_fragment_=topic/golang-nuts/Pi7VveWDUPc">confirmed</a>:
+<ul>
+<li>
+	the signatures of the functions in <code>unsafe</code> package
+	will not change in future Go 1 versions,
+</li>
+<li>
+	and the <code>unsafe.Pointer</code> type will
+	always there in future Go 1 versions.
+</li>
+</ul>
+
+<p>
+So, the three functions provided in the <code>unsafe</code> package
+don't look much dangerous.
+Rob Pike, the Go project leader, even
+<a href="https://github.com/golang/go/issues/5602">made a proposal to move
+the three functions to elsewhere</a>.
+The only unsafety of these functions is their calls
+may return different values for later versions of Go compilers.
+</p>
+
+<p>
+Most of the unsafty of the <code>unsafe</code> package comes unsafe pointers.
+They are as dangerous as C pointers, which is Go always tries to avoid.
+</p>
+
+</div>
+-->
+
+
+
+<h3>非类型安全指针相关的类型转换</h3>
+
+<div>
+目前（Go 1.25），Go支持下列和非类型安全指针相关的类型转换：
+<ul>
+<li>
+	一个类型安全指针值可以被显式转换为一个非类型安全指针类型，反之亦然。
+</li>
+<li>
+	一个uintptr值可以被显式转换为一个非类型安全指针类型，反之亦然。
+	但是，注意，一个nil非类型安全指针类型不应该被转换为uintptr并进行算术运算后再转换回来。
+</li>
+</ul>
+
+<p>
+通过使用这些转换规则，我们可以将任意两个类型安全指针转换为对方的类型，我们也可以将一个安全指针值和一个uintptr值转换为对方的类型。
+</p>
+
+<p>
+然而，尽管这些转换在编译时刻是合法的，但是它们中一些在运行时刻并非是合法和安全的。
+这些转换摧毁了Go的类型系统（不包括非类型安全指针部分）精心设立的内存安全屏障。
+我们必须遵循本文后面要介绍的一些用法指示来使用非类型安全指针才能写出合法并安全的代码。
+</p>
+
+</div>
+
+<h3>我们需要知道的一些事实</h3>
+
+<p>
+在开始介绍合法的非类型安全指针使用模式之前，我们需要知道一些事实。
+</p>
+
+<h4>事实一：非类型安全指针值是指针但uintptr值是整数</h4>
+
+<p>
+每一个非零安全或者不安全指针值均引用着另一个值。但是一个uintptr值并不引用任何值，它被看作是一个整数，尽管常常它存储的是一个地址的数字表示。
+</p>
+
+<p>
+Go是一门支持垃圾回收的语言。
+当一个Go程序在运行中，Go运行时（runtime）将不时地<a href="memory-block.html#when-to-collect">检查哪些内存块将不再被程序中的任何仍在使用中的值所引用并且回收这些内存块</a>。
+指针在这一过程中扮演着重要的角色。值与值之间和内存块与值之间的引用关系是通过指针来表征的。
+</p>
+
+<p>
+既然一个uintptr值是一个整数，那么它可以参与算术运算。
+</p>
+
+<p>
+下一节中的例子将展示指针和uintptr值的不同。
+</p>
+
+<h4>事实二：不再被使用的内存块的回收时间点是不确定的</h4>
+
+<div>
+<p>
+在运行时刻，一次新的垃圾回收过程可能在一个不确定的时间启动，并且此过程可能需要一段不确定的时长才能完成。
+所以一个不再被使用的内存块的<a href="memory-block.html#when-can-collect">回收时间点</a>是不确定的。
+</p>
+
+一个例子：
+
+<pre class="line-numbers"><code class="language-go">import "unsafe"
+
+// 假设此函数不会被内联（inline）。
+//go:noinline
+func createInt() *int {
+	return new(int)
+}
+
+func foo() {
+	p0, y, z := createInt(), createInt(), createInt()
+	var p1 = unsafe.Pointer(y) // 和y一样引用着同一个值
+	var p2 = uintptr(unsafe.Pointer(z))
+
+	// 此时，即使z指针值所引用的int值的地址仍旧存储
+	// 在p2值中，但是此int值已经不再被使用了，所以垃圾
+	// 回收器认为可以回收它所占据的内存块了。另一方面，
+	// p0和p1各自所引用的int值仍旧将在下面被使用。
+
+	// uintptr值可以参与算术运算。
+	p2 += 2; p2--; p2--
+
+	*p0 = 1                         // okay
+	*(*int)(p1) = 2                 // okay
+	*(*int)(unsafe.Pointer(p2)) = 3 // 危险操作！
+}
+</code></pre>
+
+<p>
+在上面这个例子中，值<code>p2</code>仍旧在使用这个事实并不能保证曾经被<code>z</code>指针值所引用的<code>int</code>值所占的内存块一定还没有被回收。
+换句话说，当<code>*(*int)(unsafe.Pointer(p2)) = 3</code>被执行的时候，此内存块有可能已经被回收了。
+所以，继续通过解引用值<code>p2</code>中存储的地址是非常危险的，因为此内存块可能已经被重新分配给其它值使用了。
+</p>
+
+</div>
+
+<!--
+https://github.com/golang/go/issues/32115
+<h4>事实三：我们可以将一个值的指针传递给<code>runtime.KeepAlive</code>函数调用来确保此值在此调用之前仍然处于被使用中</h4>
+
+
+<i>（我决定将此事实从此文中删除。这并不意味着此事实不存在，只是此事实和本文的主题不是很相关。并且它对上一小节中展示的问题于事无补。请阅读下一个事实以获取根由。）</i>
+
+<div>
+<p>
+为了确保一个值部和它所引用着的值部仍然被认为在使用中，我们应该将引用着此值的另一个值传给一个<code>runtime.KeepAlive</code>函数调用。
+在实践中，我们常常将此值的指针传递给一个<code>runtime.KeepAlive</code>函数调用。
+</p>
+
+比如，通过在上一小节的例子中的最后添加一个<code>runtime.KeepAlive(z)</code>调用，
+<code>*(*int)(unsafe.Pointer(p2)) = 3</code>可以被安全地执行了。
+
+<pre class="line-numbers"><code class="language-go">func foo() {
+	p0, y, z := createInt(), createInt(), createInt()
+	var p1 = unsafe.Pointer(y)
+	var p2 = uintptr(unsafe.Pointer(z))
+
+	p2 += 2; p2 - -; p2 - -
+
+	*p0 = 1
+	*(*int)(p1) = 2
+	*(*int)(unsafe.Pointer(p2)) = 3 // 转危为安！
+
+	runtime.KeepAlive(z) // 确保z所引用的值仍在使用中
+}
+</code></pre>
+
+<p>
+</p>
+
+</div>
+-->
+
+<a class="anchor" id="fact-value-address-might-change"></a>
+<h4>事实三：一个值的地址在程序运行中可能改变</h4>
+
+<p>
+详情请阅读<a href="memory-block.html#where-to-allocate">内存块</a>一文（见链接所指一节的尾部）。
+这里我们只需要知道当一个协程的栈的大小改变时，开辟在此栈上的内存块需要移动，从而相应的值的地址将改变。
+</p>
+
+<h4>事实四：一个值的生命范围可能并没有代码中看上去的大</h4>
+
+<div>
+<p>
+比如中下面这个例子，值<code>t</code>仍旧在使用中并不能保证被值<code>t.y</code>所引用的值仍在被使用。
+</p>
+
+<pre class="line-numbers"><code class="language-go">type T struct {
+	x int
+	y *[1<<23]byte
+}
+
+func bar() {
+	t := T{y: new([1<<23]byte)}
+	p := uintptr(unsafe.Pointer(&t.y[0]))
+
+	... // 使用t.x和t.y
+
+	// 一个聪明的编译器能够觉察到值t.y将不会再被用到，
+	// 所以认为t.y值所占的内存块可以被回收了。
+
+	*(*byte)(unsafe.Pointer(p)) = 1 // 危险操作！
+
+	println(t.x) // ok。继续使用值t，但只使用t.x字段。
+}
+</code></pre>
+
+<p>
+</p>
+
+</div>
+
+<h4>事实五：<code>*unsafe.Pointer</code>是一个类型安全指针类型</h4>
+
+<div>
+<p>
+是的，类型<code>*unsafe.Pointer</code>是一个类型安全指针类型。
+它的基类型为<code>unsafe.Pointer</code>。
+既然它是一个类型安全指针类型，根据上面列出的类型转换规则，它的值可以转换为类型<code>unsafe.Pointer</code>，反之亦然。
+</p>
+
+一个例子：
+
+<pre class="line-numbers"><code class="language-go">package main
+
+import "unsafe"
+
+func main() {
+	x := 123                // 类型为int
+	p := unsafe.Pointer(&x) // 类型为unsafe.Pointer
+	pp := &p                // 类型为*unsafe.Pointer
+	p = unsafe.Pointer(pp)
+	pp = (*unsafe.Pointer)(p)
+}
+</code></pre>
+
+</div>
+
+<h3>如何正确地使用非类型安全指针？</h3>
+
+<p>
+<code>unsafe</code>标准库包的文档中列出了<a href="https://golang.google.cn/pkg/unsafe/#Pointer">六种非类型安全指针的使用模式</a>。
+下面将对它们逐一进行讲解。
+</p>
+
+<h4>使用模式一：将类型<code>*T1</code>的一个值转换为非类型安全指针值，然后将此非类型安全指针值转换为类型<code>*T2</code>。</h4>
+
+<div>
+
+<p>
+利用前面列出的非类型安全指针相关的转换规则，我们可以将一个<code>*T1</code>值转换为类型<code>*T2</code>，其中<code>T1</code>和<code>T2</code>为两个任意类型。
+然而，我们只有在<code>T1</code>的尺寸不小于<code>T2</code>并且此转换具有实际意义的时候才应该实施这样的转换。
+</p>
+
+<p>
+通过将一个<code>*T1</code>值转换为类型<code>*T2</code>，我们也可以将一个<code>T1</code>值转换为类型<code>T2</code>。
+</p>
+
+一个这样的例子是<code>math</code>标准库包中的<code>Float64bits</code>函数。
+此函数将一个<code>float64</code>值转换为一个<code>uint64</code>值。
+在此转换过程中，此<code>float64</code>值在内存中的每个位（bit）都保持不变。
+函数<code>math.Float64frombits</code>为此转换的逆转换。
+
+<pre class="line-numbers"><code class="language-go">func Float64bits(f float64) uint64 {
+	return *(*uint64)(unsafe.Pointer(&f))
+}
+
+func Float64frombits(b uint64) float64 {
+	return *(*float64)(unsafe.Pointer(&b))
+}
+</code></pre>
+
+<p>
+请注意，函数调用<code>math.Float64bits(aFloat64)</code>的结果和显式转换<code>uint64(aFloat64)</code>的结果不同。
+</p>
+
+在下面这个例子中，我们使用此模式将一个<code>[]MyString</code>值和一个<code>[]string</code>值转换为对方的类型。
+结果切片和被转换的切片将共享底层元素。（这样的转换是不可能通过安全的方式来实现的。）
+
+<pre class="line-numbers"><code class="language-go">package main
+
+import (
+	"fmt"
+	"unsafe"
+)
+
+func main() {
+	type MyString string
+	ms := []MyString{"C", "C++", "Go"}
+	fmt.Printf("%s\n", ms)  // [C C++ Go]
+	// ss := ([]string)(ms) // 编译错误
+	ss := *(*[]string)(unsafe.Pointer(&ms))
+	ss[1] = "Zig"
+	fmt.Printf("%s\n", ms) // [C Zig Go]
+	// ms = []MyString(ss) // 编译错误
+	ms = *(*[]MyString)(unsafe.Pointer(&ss))
+}
+</code></pre>
+
+顺便说一句，从Go 1.17开始，我们也可以使用<code>unsafe.Slice</code>函数来实现这样的转换：
+
+<pre class="line-numbers"><code class="language-go">func main() {
+	...
+	
+	ss = unsafe.Slice((*string)(&ms[0]), len(ms))
+	ms = unsafe.Slice((*MyString)(&ss[0]), len(ss))
+}
+</code></pre>
+
+<p>
+</p>
+
+此模式在实践中的另一个应用是将一个不再使用的字节切片转换为一个字符串（从而避免对底层字节序列的一次开辟和复制）。如下例所示：
+
+<pre class="line-numbers"><code class="language-go">func ByteSlice2String(bs []byte) string {
+	return *(*string)(unsafe.Pointer(&bs))
+}
+</code></pre>
+
+<p>
+此实现借鉴于<code>strings</code>标准库包中的<code>Builder</code>类型的<code>String</code>方法的实现。
+字节切片的尺寸比字符串的尺寸要大，并且<a href="value-part.html#internal-definitions">它们的底层结构</a>类似，所以此转换（对于当前的主流Go编译器来说）是安全的。
+即使这样，此实现也只推荐在标准库中使用，而不推荐在用户代码中使用。
+从Go 1.20开始，在用户代码中，最好尽量使用本文前面介绍的使用<code>unsafe.String</code>函数的实现。
+</p>
+
+反过来，下面这个例子中的转换是非法的，因为字符串的尺寸比字节切片的尺寸小。
+<pre class="line-numbers"><code class="language-go">func String2ByteSlice(s string) []byte {
+	return *(*[]byte)(unsafe.Pointer(&s)) // 危险
+}
+</code></pre>
+
+<p>
+在后面的模式六中展示了一种合法的（无需复制底层字节序列即可）将一个字符串转换为字节切片的实现。
+</p>
+
+<p>
+注意：当运用上面展示的使用非类型安全指针将一个字节切片转换为字符串的技巧时，请确保结果字符串在使用过程中绝对不修改此字节切片中的字节值。
+</p>
+
+</div>
+
+<h4>使用模式二：将一个非类型安全指针值转换为一个uintptr值，然后使用此uintptr值。</h4>
+
+<div>
+<p>
+此模式不是很有用。一般我们将最终的转换结果uintptr值输出到日志中用来调试，但是有很多其它安全并且简洁的途径也可以实现此目的。
+</p>
+
+一个例子：
+<pre class="line-numbers"><code class="language-go">package main
+
+import "fmt"
+import "unsafe"
+
+func main() {
+	type T struct{a int}
+	var t T
+	fmt.Printf("%p\n", &t)                          // 0xc6233120a8
+	println(&t)                                     // 0xc6233120a8
+	fmt.Printf("%x\n", uintptr(unsafe.Pointer(&t))) // c6233120a8
+}
+</code></pre>
+
+<p>
+输出地址在每次运行中可能都会不同。
+</p>
+
+</div>
+
+<a class="anchor" id="pattern-convert-to-uintptr-and-back"></a>
+<h4>使用模式三：将一个非类型安全指针转换为一个uintptr值，然后此uintptr值参与各种算术运算，再将算术运算的结果uintptr值转回非类型安全指针。</h4>
+
+<div>
+
+转换前后的非类型安全指针必须指向同一个内存块。一个例子：
+<pre class="line-numbers"><code class="language-go">package main
+
+import "fmt"
+import "unsafe"
+
+type T struct {
+	x bool
+	y [3]int16
+}
+
+const N = unsafe.Offsetof(T{}.y)
+const M = unsafe.Sizeof(T{}.y[0])
+
+func main() {
+	t := T{y: [3]int16{123, 456, 789}}
+	p := unsafe.Pointer(&t)
+	// "uintptr(p) + N + M + M"为t.y[2]的内存地址。
+	ty2 := (*int16)(unsafe.Pointer(uintptr(p)+N+M+M))
+	fmt.Println(*ty2) // 789
+}
+</code></pre>
+
+<p>
+其实，对于这样地址加减运算，更推荐使用上面介绍的Go 1.17中引入的<code>unsafe.Add</code>函数来完成。
+</p>
+
+注意：在上面这个例子中，转换<code>unsafe.Pointer(uintptr(p) + N + M + M)</code>不应该像下面这样被拆成两行。
+请阅读下面的代码中的注释以获取原因。
+
+<pre class="line-numbers"><code class="language-go">func main() {
+	t := T{y: [3]int16{123, 456, 789}}
+	p := unsafe.Pointer(&t)
+	// ty2 := (*int16)(unsafe.Pointer(uintptr(p)+N+M+M))
+	addr := uintptr(p) + N + M + M
+	
+	// ...（一些其它操作）
+	
+	// 从这里到下一行代码执行之前，t值将不再被任何值
+	// 引用，所以垃圾回收器认为它可以被回收了。一旦
+	// 它真地被回收了，下面继续使用t.y[2]值的曾经
+	// 的地址是非法和危险的！另一个危险的原因是
+	// t的地址在执行下一行之前可能改变（见事实三）。
+	// 另一个潜在的危险是：如果在此期间发生了一些
+	// 操作导致协程堆栈大小改变的情况，则记录在addr
+	// 中的地址将失效。
+	ty2 := (*int16)(unsafe.Pointer(addr))
+	fmt.Println(*ty2)
+}
+</code></pre>
+
+<p>
+这样的bug是非常微妙和很难被觉察到的，并且爆发出来的几率是相当得低。
+一旦这样的bug爆发出来，将很让人摸不到头脑。这也是使用非类型安全指针被认为是危险操作的原因之一。
+</p>
+
+<!--
+如果我们确实希望将上面提到的转换拆成两行，我们应该在拆分后的两行后添加一条<code>runtime.KeepAlive</code>函数调用并将（直接或间接）引用着<code>t.y[2]</code>值的一个值传递给此调用做为实参。
+比如：
+<pre class="line-numbers"><code class="language-go">func main() {
+	t := T{y: [3]int16{123, 456, 789}}
+	p := unsafe.Pointer(&t)
+	addr := uintptr(p) + N + M + M
+	ty2 := (*int16)(unsafe.Pointer(addr))
+	// 下面这条调用将确保整个t值的内存在此时刻
+	// 不会被回收（使用官方编译器编译）。
+	runtime.KeepAlive(p)
+	fmt.Println(*ty2)
+}
+</code></pre>
+
+<p>
+然而，我并不推荐在此使用模式中使用此<code>runtime.KeepAlive</code>技巧。具体原因见上面的注释中提到的潜在的危险。
+因为存在着这样一种可能：当Go运行时为变量<code>ty2</code>开辟内存的时候，当前协程的栈的大小需要进行增大调整。调整之后<code>t</code>的地址将改变，但是存储在变量<code>addr</code>中的地址值却未得到更新（因为只有开辟在栈上的指针类型的值才会被更新，而变量<code>addr</code>的类型为整数类型<code>uintptr</code>）。这直接导致存储在变量<code>ty2</code>的地址值时无效的（野指针）。
+但是，实事求是地讲，如果上例中的代码使用官方标准编译器编译，则此潜在的危险并不存在。
+原因是在官方标准编译器的实现中，一个<code>runtime.KeepAlive</code>调用将使被它的实参引用着的值开辟到堆上，并且开辟在堆上的内存块从不会被移动。
+</p>
+<p>
+<i>（上面这一段的解说是不正确的。一个<code>runtime.KeepAlive</code>调用并不能使被它的实参引用着的值开辟到堆上）</i>
+</p>
+-->
+
+<p>
+中间uintptr值可以参与<code>&amp;^</code>清位运算来进行内存对齐计算，只要保证转换前后的非类型安全指针同时指向同一个内存块，整个转换就是合法安全的。
+</p>
+
+<p>
+另一个需要注意的细节是最好不要将一个内存块的结尾边界地址存储在一个（安全或非安全）指针中。
+这样做将导致紧随着此内存块的另一个内存块因为被引用而不会被垃圾回收掉，或者因为形成非法指针而导致程序崩溃（取决于具体编译器实现）。
+请阅读<a href="unofficial-faq.html#final-zero-size-field">这个问答</a>以获取更多解释。
+</p>
+
+</div>
+
+<h4>使用模式四：将非类型安全指针值转换为<code>uintptr</code>值并传递给<code>syscall.Syscall</code>函数调用。</h4>
+
+<div>
+
+通过对上一个使用模式的解释，我们知道像下面这样含有uintptr类型的参数的函数定义是危险的。
+
+<pre class="line-numbers"><code class="language-go">// 假设此函数不会被内联。
+func DoSomething(addr uintptr) {
+	// 对处于传递进来的地址处的值进行读写...
+}
+</code></pre>
+
+<p>
+上面这个函数是危险的原因在于此函数本身不能保证传递进来的地址处的内存块一定没有被回收。
+如果此内存块已经被回收了或者被重新分配给了其它值，那么此函数内部的操作将是非法和危险的。
+</p>
+
+然而，<code>syscall</code>标准库包中的<code>Syscall</code>函数的原型为：
+<pre class="disable-line-numbers111"><code class="language-go">func Syscall(trap, a1, a2, a3 uintptr) (r1, r2 uintptr, err Errno)
+</code></pre>
+
+<p>
+那么此函数是如何保证处于传递给它的地址参数值<code>a1</code>、<code>a2</code>和<code>a3</code>处的内存块在此函数执行过程中一定没有被回收和被移动呢？
+此函数无法做出这样的保证。事实上，是编译器做出了这样的保证。
+这是<code>syscall.Syscall</code>这样的函数的特权。其它自定义函数无法享受到这样的待遇。
+</p>
+
+<p>
+我们可以认为编译器针对每个<code>syscall.Syscall</code>函数调用中的每个被转换为<code>uintptr</code>类型的非类型安全指针实参添加了一些指令，从而保证此非类型安全指针所引用着的内存块在此调用返回之前不会被垃圾回收和移动。
+</p>
+
+<p>
+注意：在Go 1.15之前，类型转换表达式<code>uintptr(anUnsafePointer)</code>可以呈现为相关实参的子表达式。
+但是，从Go 1.15开始，使用此模式的要求变得略加严格：相关实参必须呈现为<code>uintptr(anUnsafePointer)</code>这种形式。
+</p>
+
+下面这个调用是安全的：
+
+<pre class="line-numbers"><code class="language-go">syscall.Syscall(syscall.SYS_READ, uintptr(fd),
+			uintptr(unsafe.Pointer(p)), uintptr(n))
+</code></pre>
+
+但下面这个调用则是危险的：
+
+<pre class="line-numbers"><code class="language-go">u := uintptr(unsafe.Pointer(p))
+// 被p所引用着的值在此时有可能会被回收掉，
+// 或者它的地址已经发生了改变。
+syscall.Syscall(SYS_READ, uintptr(fd), u, uintptr(n))
+
+// 相关实参必须呈现为"uintptr(anUnsafePointer)"
+// 这种形式。事实上，Go 1.15之前，此调用是合法的；
+// 但是Go 1.15略改了一点规则。
+syscall.Syscall(SYS_XXX, uintptr(uintptr(fd)),
+			uint(uintptr(unsafe.Pointer(p))), uintptr(n))
+</code></pre>
+
+<p>
+</p>
+
+<!--
+https://github.com/golang/go/issues/34684#issuecomment-540103545
+-->
+<p>
+注意：此使用模式也适用于Windows系统中的<a href="https://golang.org/pkg/syscall/?GOOS=windows#Proc.Call">syscall.Proc.Call</a>和<a href="https://golang.org/pkg/syscall/?GOOS=windows#LazyProc.Call">syscall.LazyProc.Call</a>系统调用。
+</p>
+
+<p>
+再提醒一次，此使用模式不适用于其它自定义函数。
+</p>
+
+</div>
+
+<h4>使用模式五：将<code>reflect.Value.Pointer</code>或者<code>reflect.Value.UnsafeAddr</code>方法的<code>uintptr</code>返回值立即转换为非类型安全指针。</h4>
+
+<div>
+
+<p>
+<code>reflect</code>标准库包中的<code>Value</code>类型的<code>Pointer</code>和<code>UnsafeAddr</code>方法都返回一个<code>uintptr</code>值，而不是一个<code>unsafe.Pointer</code>值。
+这样设计的目的是避免用户不引用<code>unsafe</code>标准库包就可以将这两个方法的返回值（如果是<code>unsafe.Pointer</code>类型）转换为任何类型安全指针类型。
+</p>
+
+<p>
+这样的设计需要我们将这两个方法的调用的<code>uintptr</code>结果立即转换为非类型安全指针。
+否则，将出现一个短暂的可能导致处于返回的地址处的内存块被回收掉的时间窗。
+此时间窗是如此短暂以至于此内存块被回收掉的几率非常之低，因而这样的编程错误造成的bug的重现几率亦十分得低。
+</p>
+
+比如，下面这个调用是安全的：
+
+<pre class="disable-line-numbers111"><code class="language-go">p := (*int)(unsafe.Pointer(reflect.ValueOf(new(int)).Pointer()))
+</code></pre>
+
+而下面这个调用是危险的：
+
+<pre class="line-numbers"><code class="language-go">u := reflect.ValueOf(new(int)).Pointer()
+// 在这个时刻，处于存储在u中的地址处的内存块
+// 可能会被回收掉。
+p := (*int)(unsafe.Pointer(u))
+</code></pre>
+
+<p>
+</p>
+
+<p>
+注意：Go 1.19引入了一个新的方法：<code>reflect.Value.UnsafePointer()</code>。
+官方推荐以后使用此方法来替换上述两个方法。也就说，承认了原来的设计思路并不太对路。
+<code>UnsafePointer()</code>返回一个<code>unsafe.Pointer</code>值。
+</p>
+
+</div>
+
+<h4>使用模式六：将一个<code>reflect.SliceHeader</code>或者<code>reflect.StringHeader</code>值的<code>Data</code>字段转换为非类型安全指针，以及其逆转换。</h4>
+
+<div>
+<p>
+和上一小节中提到的同样的原因，<code>reflect</code>标准库包中的<code>SliceHeader</code>和<code>StringHeader</code>类型的<code>Data</code>字段的类型被指定为<code>uintptr</code>，而不是<code>unsafe.Pointer</code>。
+</p>
+
+<p>
+我们可以将一个字符串的指针值转换为一个<code>*reflect.StringHeader</code>指针值，从而可以对此字符串的内部进行修改。
+类似地，我们可以将一个切片的指针值转换为一个<code>*reflect.SliceHeader</code>指针值，从而可以对此切片的内部进行修改。
+</p>
+
+一个使用<code>reflect.StringHeader</code>的例子：
+
+<pre class="line-numbers"><code class="language-go">package main
+
+import "fmt"
+import "unsafe"
+import "reflect"
+
+func main() {
+	a := [...]byte{'G', 'o', 'l', 'a', 'n', 'g'}
+	s := "Java"
+	hdr := (*reflect.StringHeader)(unsafe.Pointer(&s))
+	hdr.Data = uintptr(unsafe.Pointer(&a))
+	hdr.Len = len(a)
+	fmt.Println(s) // Golang
+	// 现在，字符串s和切片a共享着底层的byte字节序列，
+	// 从而使得此字符串中的字节变得可以修改。
+	a[2], a[3], a[4], a[5] = 'o', 'g', 'l', 'e'
+	fmt.Println(s) // Google
+}
+</code></pre>
+
+<p>
+</p>
+
+一个使用了<code>reflect.SliceHeader</code>的例子：
+
+<pre class="line-numbers"><code class="language-go">package main
+
+import (
+	"fmt"
+	"unsafe"
+	"reflect"
+)
+
+func main() {
+	a := [6]byte{'G', 'o', '1', '0', '1'}
+	bs := []byte("Golang")
+	hdr := (*reflect.SliceHeader)(unsafe.Pointer(&bs))
+	hdr.Data = uintptr(unsafe.Pointer(&a))
+
+	hdr.Len = 2
+	hdr.Cap = len(a)
+	fmt.Printf("%s\n", bs) // Go
+	bs = bs[:cap(bs)]
+	fmt.Printf("%s\n", bs) // Go101
+}
+</code></pre>
+
+<!-- not right
+<p>
+
+注意：上例中的<code>runtime.KeepAlive</code>调用必不可少。
+否则，在转换<code>uintptr(unsafe.Pointer(&amp;a))</code>被执行之前，分配给数组<code>a</code>的内存可能已经被回收或者移动。
+
+
+<i>（此<code>runtime.KeepAlive</code>调用并不需要。）</i>
+</p>
+https://groups.google.com/forum/#!topic/golang-nuts/MgIP2KvEAaU
+-->
+<p>
+</p>
+
+一般说来，我们只应该从一个已经存在的字符串值得到一个<code>*reflect.StringHeader</code>指针，
+或者从一个已经存在的切片值得到一个<code>*reflect.SliceHeader</code>指针，
+而不应该从一个全新的<code>StringHeader</code>值生成一个字符串，或者从一个全新的<code>SliceHeader</code>值生成一个切片。
+比如，下面的代码是不安全的：
+
+<pre class="line-numbers"><code class="language-go">var hdr reflect.StringHeader
+hdr.Data = uintptr(unsafe.Pointer(new([5]byte)))
+// 在此时刻，上一行代码中刚开辟的数组内存块已经不再被任何值
+// 所引用，所以它可以被回收了。
+hdr.Len = 5
+s := *(*string)(unsafe.Pointer(&hdr)) // 危险！
+</code></pre>
+
+<p>
+</p>
+
+下面是一个展示了如何通过使用非类型安全途径将一个字符串转换为字节切片的例子。
+和使用类型安全途径进行转换不同，使用非类型安全途径避免了复制一份底层字节序列。
+
+<pre class="line-numbers"><code class="language-go">package main
+
+import (
+	"fmt"
+	"reflect"
+	"strings"
+	"unsafe"
+)
+
+func String2ByteSlice(str string) (bs []byte) {
+	strHdr := (*reflect.StringHeader)(unsafe.Pointer(&str))
+	sliceHdr := (*reflect.SliceHeader)(unsafe.Pointer(&bs))
+	sliceHdr.Data = strHdr.Data
+	sliceHdr.Cap = strHdr.Len
+	sliceHdr.Len = strHdr.Len
+	return
+}
+
+func main() {
+	// str := "Golang"
+	// 对于官方标准编译器来说，上面这行将使str中的字节
+	// 开辟在不可修改内存区。所以这里我们使用下面这行。
+	str := strings.Join([]string{"Go", "land"}, "")
+	s := String2ByteSlice(str)
+	fmt.Printf("%s\n", s) // Goland
+	s[5] = 'g'
+	fmt.Println(str) // Golang
+}
+</code></pre>
+
+<p>
+<!--
+<i>（本文曾经认为上面这个例子中的<code>runtime.KeepAlive</code>调用是必须的。非常抱歉，这个观点是错误的。至少对于官方标准编译器，此调用在这里是不必要的。）</i>
+-->
+</p>
+
+<p>
+注意：当使用上面展示的使用非类型安全指针将一个字符串转换为字节切片时，请确保结果此源字符串的生命期内务必不要修改结果字节切片中的字节值（上面的例子违背了此原则）。
+事实上，更为推荐的是最好永远不要修改结果字节切片中的字节值。此非类型安全方式的目的主要是为了在局部感知范围内避免一次内存开辟，而不是一种通用的方式。
+</p>
+
+我们可以使用类似的实现（如下所示）来将一个字节切片转换为字符串。
+此实现被模式一中展示的方法略为安全一些（但是也更慢一些）。
+
+<pre class="line-numbers"><code class="language-go">func ByteSlice2String(bs []byte) (str string) {
+	sliceHdr := (*reflect.SliceHeader)(unsafe.Pointer(&bs))
+	strHdr := (*reflect.StringHeader)(unsafe.Pointer(&str))
+	strHdr.Data = sliceHdr.Data
+	strHdr.Len = sliceHdr.Len
+	return
+}
+</code></pre>
+
+<p>
+同样地，请确保结果此结果字符串的生命期内务必不要修改实参字节切片中的字节值。
+</p>
+
+最后，顺便举一个违背了模式三的使用原则的例子：
+
+<pre class="line-numbers"><code class="language-go">package main
+
+import (
+	"fmt"
+	"reflect"
+	"unsafe"
+)
+
+func Example_Bad() *byte {
+	var str = "godoc"
+	hdr := (*reflect.StringHeader)(unsafe.Pointer(&str))
+	pbyte := (*byte)(unsafe.Pointer(hdr.Data + 2))
+	return pbyte // *pbyte == 'd'
+}
+
+func main() {
+	fmt.Println(string(*Example_Bad()))
+}
+</code></pre>
+
+下面是两个正确的实现：
+
+<pre class="line-numbers"><code class="language-go">func Example_Good1() *byte {
+	var str = "godoc"
+	hdr := (*reflect.StringHeader)(unsafe.Pointer(&str))
+	pbyte := (*byte)(unsafe.Pointer(
+		uintptr(unsafe.Pointer(hdr.Data)) + 2))
+	return pbyte
+}
+
+// 从Go 1.17开始也可以使用此实现。
+func Example_Good2() *byte {
+	var str = "godoc"
+	hdr := (*reflect.StringHeader)(unsafe.Pointer(&str))
+	pbyte := (*byte)(unsafe.Add(unsafe.Pointer(hdr.Data), 2))
+	return pbyte
+}
+</code></pre>
+
+<p>
+上面这几个例子借鉴自Bryan C. Mills在slack中发表的一个留言。
+</p>
+
+<p>
+<code>reflect</code>标准库包中<code>SliceHeader</code>和<code>StringHeader</code>类型的<a href="https://golang.google.cn/pkg/reflect/#SliceHeader">文档</a>提到这两个结构体类型的定义不保证在以后的版本中不发生改变。
+这也可以看作是使用非类型安全指针的另一个（较低的）潜在风险。
+好在目前（Go 1.25）的两个主流Go编译器（标准编译器和gccgo编译器）都认可当前版本中的定义。
+</p>
+
+<p>
+Go核心开发团队也意识到了这两个类型的使用不方便并且容易出错，因此，这两个类型从Go 1.20开始已经被不再被推荐使用了并且它们已经在Go 1.21中被宣布为废弃了。
+取而代之，我们应该尽量使用本文前面介绍的<code>unsafe.String</code>、<code>unsafe.StringData</code>、<code>unsafe.Slice</code>和<code>unsafe.SliceData</code>这几个函数。
+</p>
+
+</div>
+
+<h3>总结一下</h3>
+
+<p>
+从上面解释中，我们得知，对于某些情形，非类型安全机制可以帮助我们写出运行效率更高的代码。
+但是，使用非类型安全指针也使得我们可能轻易地写出一些重现几率非常低的微妙的bug。
+一个含有这样的bug的程序很可能在很长一段时间内都运行正常，但是突然变得不正常甚至崩溃。
+这样的bug很难发现和调试。
+</p>
+
+<p>
+我们只应该在不得不使用非类型安全机制的时候才使用它们。
+特别地，当我们使用非类型安全机制时，请务必遵循上面列出的使用模式。
+</p>
+
+<p>
+重申一次，我们应该知晓当前的非类型安全机制规则和使用模式可能在以后的Go版本中完全失效。
+当然，目前没有任何迹象表明这种变化将很快会来到。
+但是，一旦发生这种变化，本文中列出的当前是正确的代码将变得不再安全甚至编译不通过。
+所以，在实践中，请尽量保证能够将使用了非类型安全机制的代码轻松改为使用安全途径实现。
+</p>
+
+<p>
+最后值得提一下的是，Go官方工具链1.14中加入了一个<code>-gcflags=all=-d=checkptr</code>编译器动态分析选项（在Windows平台上推荐使用工具链1.15+）。
+当此选项被使用的时候，编译出的程序在运行时会监测到很多（但并非所有）非类型安全指针的错误使用。一旦错误的使用被监测到，恐慌将产生。
+感谢<a href="https://github.com/golang/go/issues/22218">Matthew Dempsky实现了此特性</a>。
+</p>
+
+
