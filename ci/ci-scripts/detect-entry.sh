@@ -13,6 +13,7 @@ entry=""
 start_cmd=""
 build_cmd=""
 test_cmd=""
+deps_file=""         # ← новое поле
 has_dockerfile=false
 is_mobile=false
 artifacts='[]'
@@ -22,7 +23,6 @@ log "Start detect-entry..."
 
 PROJECT_DIR="project"
 
-# рекурсивная функция поиска файла по имени/шаблону
 find_file_recursive() {
   local pattern="$1"
   find "$PROJECT_DIR" -type f -name "$pattern" | head -n1
@@ -50,62 +50,71 @@ fi
 # 3) Dockerfile
 if [ -f "$PROJECT_DIR/Dockerfile" ]; then
   has_dockerfile=true
-  dockerfile="${PROJECT_DIR}/Dockerfile"
-  [ -f Dockerfile ] && dockerfile="Dockerfile"
-  docker_cmd=$(awk '/ENTRYPOINT|^CMD/ {print $0; exit}' "$dockerfile" || true)
-  if [ -n "$docker_cmd" ] && [ -z "$start_cmd" ]; then
-    start_cmd="$docker_cmd"
-    log "Dockerfile -> start_cmd guess='$start_cmd'"
-  else
-    log "Dockerfile present but no ENTRYPOINT/CMD parsed"
-  fi
 fi
-
 
 # 5) Python
 pyproject_file=$(find_file_recursive "pyproject.toml")
 requirements_file=$(find_file_recursive "requirements.txt")
-py_file=$(find "$PROJECT_DIR" -type f -name "*.py" | head -n1 || true)
+any_py_file=$(find "$PROJECT_DIR" -type f -name "*.py" | head -n1 || true)
 
-if [ -f "$pyproject_file" ] || [ -f "$requirements_file" ] || [ -n "$py_file" ]; then
+if [ -f "$pyproject_file" ] || [ -f "$requirements_file" ] || [ -n "$any_py_file" ]; then
   language="python"
   build_tool="pip"
 
-  # Определяем корневую папку Python проекта
+  # Определяем корневую папку проекта для Python
   if [ -f "$pyproject_file" ]; then
     project_dir=$(dirname "$pyproject_file")
   elif [ -f "$requirements_file" ]; then
     project_dir=$(dirname "$requirements_file")
   else
-    project_dir=$(dirname "$py_file")
+    project_dir=$(dirname "$any_py_file")
   fi
 
-  # Принудительно устанавливаем Python entry
-  main_py_candidate=$(find "$project_dir" -name "main.py" | head -n1 || true)
-  any_py_candidate=$(find "$project_dir" -name "*.py" | head -n1 || true)
-
-  if [ -n "$main_py_candidate" ] && [ -f "$main_py_candidate" ]; then
-    entry="$main_py_candidate"
-    log "Set Python entry to main.py: $entry"
-  elif [ -n "$any_py_candidate" ] && [ -f "$any_py_candidate" ]; then
-    entry="$any_py_candidate"
-    log "Set Python entry to first .py file: $entry"
+  # 1️⃣ Сначала ищем в корне
+  entry=""
+  if [ -f "$project_dir/manage.py" ]; then
+      entry="$project_dir/manage.py"
+  elif [ -f "$project_dir/main.py" ]; then
+      entry="$project_dir/main.py"
   else
-    log "Warning: No Python source files found in $project_dir"
-    entry="$project_dir/main.py"  # fallback path
+      any_root_py=$(find "$project_dir" -maxdepth 1 -type f -name "*.py" | head -n1 || true)
+      if [ -n "$any_root_py" ]; then
+          entry="$any_root_py"
+      fi
   fi
 
-  # Обновляем команды с правильным путём
+  # 2️⃣ Если в корне не нашли — рекурсивно в подкаталогах
+  if [ -z "$entry" ]; then
+      manage_py=$(find "$project_dir" -mindepth 1 -type f -name "manage.py" | head -n1 || true)
+      main_py=$(find "$project_dir" -mindepth 1 -type f -name "main.py" | head -n1 || true)
+      any_py=$(find "$project_dir" -mindepth 1 -type f -name "*.py" | head -n1 || true)
+
+      if [ -n "$manage_py" ]; then
+          entry="$manage_py"
+      elif [ -n "$main_py" ]; then
+          entry="$main_py"
+      elif [ -n "$any_py" ]; then
+          entry="$any_py"
+      fi
+  fi
+
+  # 3️⃣ Фолбэк
+  if [ -z "$entry" ]; then
+      entry="$project_dir/manage.py"
+  fi
+
+  # Build / Test / Start
   if [ -f "$requirements_file" ]; then
-    build_cmd="cd $project_dir && pip install -r requirements.txt || true"
+      deps_file="$requirements_file"
+      build_cmd="cd $project_dir && pip install -r requirements.txt || true"
   else
-    build_cmd="cd $project_dir && pip install . || true"
+      build_cmd="cd $project_dir && pip install . || true"
   fi
-  
+
   test_cmd="cd $project_dir && pytest . || true"
   start_cmd="cd $project_dir && python $(basename "$entry")"
   artifacts='["project/**/.venv/","project/**/dist/"]'
-  log "Detected Python project in $project_dir/"
+  log "Detected Python project in $project_dir/, entry='$entry'"
 fi
 
 # 6) Go
@@ -116,63 +125,47 @@ any_go_file=$(find "$PROJECT_DIR" -type f -name "*.go" | head -n1 || true)
 if [ -f "$go_mod_file" ] || [ -f "$main_go_file" ] || [ -n "$any_go_file" ]; then
   language="go"
   build_tool="go"
-
-  # Определяем корень go-проекта
   if [ -f "$go_mod_file" ]; then
     project_dir=$(dirname "$go_mod_file")
+    deps_file="$go_mod_file"
   elif [ -f "$main_go_file" ]; then
     project_dir=$(dirname "$main_go_file")
   else
     project_dir=$(dirname "$any_go_file")
   fi
 
-  # Находим файл с func main
   mainfile=$(find "$project_dir" -type f -name "*.go" -exec grep -l "func main" {} + | head -n1 || true)
-  if [ -n "$mainfile" ] && [ -f "$mainfile" ]; then
+  if [ -n "$mainfile" ]; then
     entry="$mainfile"
-    log "Set Go entry to file with func main: $entry"
   else
-    entry="$project_dir/main.go"  # fallback
-    log "Warning: No file with func main found, fallback entry: $entry"
+    entry="$project_dir/main.go"
   fi
 
   build_cmd="cd $project_dir && go build ./..."
   test_cmd="cd $project_dir && go test ./..."
   start_cmd="cd $project_dir && go run $(basename "$entry")"
-
   artifacts='["project/**/bin/"]'
   log "Detected Go project in $project_dir/"
 fi
-
 
 # 7) Rust
 cargo_file=$(find_file_recursive "Cargo.toml")
 if [ -f "$cargo_file" ]; then
   language="rust"
   build_tool="cargo"
-  
-  # Принудительно устанавливаем Rust entry, даже если он уже не пустой
+  deps_file="$cargo_file"
   project_dir=$(dirname "$cargo_file")
-  
-  # Ищем main.rs во всей папке проекта рекурсивно
   main_rs_candidate=$(find "$project_dir" -name "main.rs" | head -n1 || true)
-  lib_rs_candidate=$(find "$project_dir" -name "lib.rs" | head -n1 || true)
   any_rs_candidate=$(find "$project_dir" -name "*.rs" | head -n1 || true)
-  
-  if [ -n "$main_rs_candidate" ] && [ -f "$main_rs_candidate" ]; then
+
+  if [ -n "$main_rs_candidate" ]; then
     entry="$main_rs_candidate"
-    log "Set Rust entry to main.rs: $entry"
-  elif [ -n "$lib_rs_candidate" ] && [ -f "$lib_rs_candidate" ]; then
-    entry="$lib_rs_candidate"
-    log "Set Rust entry to lib.rs: $entry"
-  elif [ -n "$any_rs_candidate" ] && [ -f "$any_rs_candidate" ]; then
+  elif [ -n "$any_rs_candidate" ]; then
     entry="$any_rs_candidate"
-    log "Set Rust entry to first .rs file: $entry"
   else
-    log "Warning: No Rust source files found in $project_dir"
-    entry="$project_dir/src/main.rs"  # fallback path
+    entry="$project_dir/src/main.rs"
   fi
-  
+
   build_cmd="cd $project_dir && cargo build --release"
   test_cmd="cd $project_dir && cargo test"
   start_cmd="cd $project_dir && cargo run"
@@ -187,53 +180,26 @@ makefile_file=$(find_file_recursive "Makefile")
 if [ -f "$cmake_file" ] || [ -f "$makefile_file" ]; then
   language="cpp"
   build_tool="cmake"
-  
-  # Определяем корневую папку проекта
   if [ -f "$cmake_file" ]; then
     project_dir=$(dirname "$cmake_file")
-    build_tool="cmake"
+    deps_file="$cmake_file"
   else
     project_dir=$(dirname "$makefile_file")
     build_tool="make"
+    deps_file="$makefile_file"
   fi
-  
-  # Ищем основные C++ файлы во всей папке проекта рекурсивно
+
   main_cpp_candidate=$(find "$project_dir" -name "main.cpp" | head -n1 || true)
-  main_cc_candidate=$(find "$project_dir" -name "main.cc" | head -n1 || true)
-  main_cxx_candidate=$(find "$project_dir" -name "main.cxx" | head -n1 || true)
   any_cpp_candidate=$(find "$project_dir" -name "*.cpp" | head -n1 || true)
-  any_cc_candidate=$(find "$project_dir" -name "*.cc" | head -n1 || true)
-  any_cxx_candidate=$(find "$project_dir" -name "*.cxx" | head -n1 || true)
-  any_cplusplus_candidate=$(find "$project_dir" -name "*.c++" | head -n1 || true)
-  
-  # Приоритет поиска entry point
-  if [ -n "$main_cpp_candidate" ] && [ -f "$main_cpp_candidate" ]; then
+
+  if [ -n "$main_cpp_candidate" ]; then
     entry="$main_cpp_candidate"
-    log "Set C++ entry to main.cpp: $entry"
-  elif [ -n "$main_cc_candidate" ] && [ -f "$main_cc_candidate" ]; then
-    entry="$main_cc_candidate"
-    log "Set C++ entry to main.cc: $entry"
-  elif [ -n "$main_cxx_candidate" ] && [ -f "$main_cxx_candidate" ]; then
-    entry="$main_cxx_candidate"
-    log "Set C++ entry to main.cxx: $entry"
-  elif [ -n "$any_cpp_candidate" ] && [ -f "$any_cpp_candidate" ]; then
+  elif [ -n "$any_cpp_candidate" ]; then
     entry="$any_cpp_candidate"
-    log "Set C++ entry to first .cpp file: $entry"
-  elif [ -n "$any_cc_candidate" ] && [ -f "$any_cc_candidate" ]; then
-    entry="$any_cc_candidate"
-    log "Set C++ entry to first .cc file: $entry"
-  elif [ -n "$any_cxx_candidate" ] && [ -f "$any_cxx_candidate" ]; then
-    entry="$any_cxx_candidate"
-    log "Set C++ entry to first .cxx file: $entry"
-  elif [ -n "$any_cplusplus_candidate" ] && [ -f "$any_cplusplus_candidate" ]; then
-    entry="$any_cplusplus_candidate"
-    log "Set C++ entry to first .c++ file: $entry"
   else
-    log "Warning: No C++ source files found in $project_dir"
-    entry="$project_dir/main.cpp"  # fallback path
+    entry="$project_dir/main.cpp"
   fi
-  
-  # Команды сборки в зависимости от build tool
+
   if [ "$build_tool" = "cmake" ]; then
     build_cmd="cd $project_dir && mkdir -p build && cd build && cmake .. && make -j4"
     test_cmd="cd $project_dir/build && ctest . || true"
@@ -243,18 +209,14 @@ if [ -f "$cmake_file" ] || [ -f "$makefile_file" ]; then
     test_cmd="cd $project_dir && make test || true"
     start_cmd="cd $project_dir && ./$(basename $project_dir)"
   fi
-  
+
   artifacts='["project/**/build/","project/**/bin/","project/**/*.exe"]'
   log "Detected C++ project in $project_dir/"
 fi
 
-
-# 10) fallback entry
+# fallback entry
 if [ -z "$entry" ]; then
-  for f in "$PROJECT_DIR/main.py" "$PROJECT_DIR/app.py" "$PROJECT_DIR/wsgi.py" \
-           "$PROJECT_DIR/index.js" "$PROJECT_DIR/server.js" "$PROJECT_DIR/app.js" \
-           "$PROJECT_DIR/src/index.js" "$PROJECT_DIR/src/main.ts" "$PROJECT_DIR/src/main.tsx" \
-           "$PROJECT_DIR/src/main.rs" "$PROJECT_DIR"/*.go; do
+  for f in "$PROJECT_DIR/main.py" "$PROJECT_DIR/app.py" "$PROJECT_DIR/index.js" "$PROJECT_DIR/src/main.rs" "$PROJECT_DIR"/*.go; do
     if [ -f "$f" ]; then
       entry="$f"
       log "Fallback file found -> $entry"
@@ -263,21 +225,20 @@ if [ -z "$entry" ]; then
   done
 fi
 
-# 11) final fallback start_cmd
+# fallback start_cmd
 if [ -z "$start_cmd" ] && [ -n "$entry" ]; then
   case "$entry" in
     *.py) start_cmd="python $entry" ;;
     *.js) start_cmd="node $entry" ;;
-    *.ts|*.tsx) start_cmd="cd $PROJECT_DIR && npm run build && node dist/$(basename "$entry" .ts).js" ;;
     *.go) start_cmd="go run $entry" ;;
-    *.rs) start_cmd="cd $PROJECT_DIR && cargo run" ;;
+    *.rs) start_cmd="cargo run" ;;
     *.jar) start_cmd="java -jar $entry" ;;
     *) start_cmd="" ;;
   esac
   log "Guessed start_cmd='$start_cmd'"
 fi
 
-# write manifest
+# write manifest with deps_file
 if command -v jq >/dev/null 2>&1; then
   jq -n \
     --arg language "$language" \
@@ -286,11 +247,12 @@ if command -v jq >/dev/null 2>&1; then
     --arg start_cmd "$start_cmd" \
     --arg build_cmd "$build_cmd" \
     --arg test_cmd "$test_cmd" \
+    --arg deps_file "$deps_file" \
     --argjson has_dockerfile "$([ "$has_dockerfile" = true ] && echo true || echo false)" \
     --argjson is_mobile "$([ "$is_mobile" = true ] && echo true || echo false)" \
     --argjson artifacts "$artifacts" \
     --argjson targets "$targets" \
-    '{language:$language, build_tool:$build_tool, entry:$entry, start_cmd:$start_cmd, build_cmd:$build_cmd, test_cmd:$test_cmd, has_dockerfile:$has_dockerfile, is_mobile:$is_mobile, artifacts:$artifacts, targets:$targets}' \
+    '{language:$language, build_tool:$build_tool, entry:$entry, start_cmd:$start_cmd, build_cmd:$build_cmd, test_cmd:$test_cmd, deps_file:$deps_file, has_dockerfile:$has_dockerfile, is_mobile:$is_mobile, artifacts:$artifacts, targets:$targets}' \
     > "$OUT"
 else
   cat > "$OUT" <<EOF
@@ -301,6 +263,7 @@ else
   "start_cmd": "$start_cmd",
   "build_cmd": "$build_cmd",
   "test_cmd": "$test_cmd",
+  "deps_file": "$deps_file",
   "has_dockerfile": $([ "$has_dockerfile" = true ] && echo true || echo false),
   "is_mobile": $([ "$is_mobile" = true ] && echo true || echo false),
   "artifacts": $artifacts,

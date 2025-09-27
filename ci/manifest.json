@@ -5,6 +5,7 @@
   "start_cmd": "python src/main.py",
   "build_cmd": "",
   "test_cmd": "",
+  "deps_file": "",
   "has_dockerfile": false,
   "is_mobile": false,
   "artifacts": [],
