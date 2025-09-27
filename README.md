@@ -68,12 +68,13 @@ $ git clone https://github.com/ViktorLamba/Amazing-Automata.git .
  
  ____
 ## Запуск
-Необходимо добавить ваш проект в папку project
+Необходимо добавить ваш проект в папку project/
+
 Далее прописать команду
-
+____
 $ bash ci/ci-scripts/build.sh
-
-(ВАЖНО! Убедитесь что вы находитесь по пути диск:/ваша_директория/Amazing-Automata)
+____
+( ВАЖНО! Убедитесь что вы находитесь по пути диск:/ваша_директория/Amazing-Automata )
 
 upd: Необходима ветка git "dev"
 
