@@ -1,114 +1,30 @@
-name: CI (detect → build → test → docker)
+name: CI/CD Docker App
 
 on:
   push:
-  pull_request:
+    branches:
+      - ci-out-project-test
 
 jobs:
-  detect:
+  build-and-deploy:
     runs-on: ubuntu-latest
-    outputs:
-      has_dockerfile: ${{ steps.detect_step.outputs.has_dockerfile }}
-      entry: ${{ steps.detect_step.outputs.entry }}
-      language: ${{ steps.detect_step.outputs.language }}
+
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout code
+        uses: actions/checkout@v3
 
-      - name: Run detect script
-        id: detect_step
+      - name: Run build.sh
         run: |
-          bash ci/ci-scripts/detect-entry.sh
-          # read values and set outputs
-          HAS_DOCKERFILE=$(jq -r '.has_dockerfile' ci/manifest.json)
-          ENTRY=$(jq -r '.entry // empty' ci/manifest.json)
-          LANGUAGE=$(jq -r '.language // empty' ci/manifest.json)
-          echo "has_dockerfile=$HAS_DOCKERFILE" >> $GITHUB_OUTPUT
-          echo "entry=$ENTRY" >> $GITHUB_OUTPUT
-          echo "language=$LANGUAGE" >> $GITHUB_OUTPUT
+          bash ci/ci-scripts/build.sh project/manifest.json myorg/myapp:latest true
 
-      - name: Upload manifest
-        uses: actions/upload-artifact@v4
+      - name: Deploy to server
+        uses: appleboy/ssh-action@v0.1.5
         with:
-          name: manifest
-          path: ci/manifest.json
-
-  build:
-    needs: detect
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - name: Download manifest
-        uses: actions/download-artifact@v4
-        with:
-          name: manifest
-      - name: Show manifest
-        run: cat ci/manifest.json
-      - name: Run build (manifest.build_cmd or fallback)
-        run: |
-          BUILD_CMD=$(jq -r '.build_cmd // empty' ci/manifest.json)
-          if [ -n "$BUILD_CMD" ]; then
-            echo "Running build_cmd: $BUILD_CMD"
-            bash -lc "$BUILD_CMD"
-          else
-            echo "No build_cmd in manifest — trying language fallback"
-            LANG=$(jq -r '.language // empty' ci/manifest.json)
-            echo "Language: $$LANG"
-            case "$LANG" in
-              node) echo "Node fallback: npm ci && npm run build" && npm ci && npm run build || true ;;
-              python) echo "Python fallback: pip install -r requirements.txt" && pip install -r requirements.txt || true ;;
-              go) echo "Go fallback: go build ./..." && go build ./... || true ;;
-              rust) echo "Rust fallback: cargo build --release" && cargo build --release || true ;;
-              *) echo "No fallback configured for $$LANG — add build_cmd to .deployrc or package manifest"; exit 0 ;;
-            esac
-          fi
-
-  test:
-    needs: build
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - name: Download manifest
-        uses: actions/download-artifact@v4
-        with:
-          name: manifest
-      - name: Run tests (manifest.test_cmd or fallback)
-        run: |
-          TEST_CMD=$(jq -r '.test_cmd // empty' ci/manifest.json)
-          if [ -n "$TEST_CMD" ]; then
-            echo "Running test_cmd: $TEST_CMD"
-            bash -lc "$TEST_CMD"
-          else
-            echo "No test_cmd — trying basic fallback"
-            LANG=$(jq -r '.language // empty' ci/manifest.json)
-            case "$LANG" in
-              node) npm test || true ;;
-              python) pytest || true ;;
-              go) go test ./... || true ;;
-              rust) cargo test || true ;;
-              *) echo "No tests to run" ;;
-            esac
-          fi
-
-  docker_build:
-    needs: detect
-    runs-on: ubuntu-latest
-    if: needs.detect.outputs.has_dockerfile == 'true'
-    steps:
-      - uses: actions/checkout@v4
-      - name: Download manifest
-        uses: actions/download-artifact@v4
-        with:
-          name: manifest
-      - name: Setup QEMU
-        uses: docker/setup-qemu-action@v2
-      - name: Setup buildx
-        uses: docker/setup-buildx-action@v2
-      - name: Build and (optionally) push multi-arch image
-        env:
-          IMAGE_NAME: my-org/my-app:latest
-          # configure secrets.REGISTRY, secrets.REGISTRY_USERNAME, secrets.REGISTRY_PASSWORD if you want to push
-        run: |
-          PLAT=$(jq -r '.targets | join(",")' ci/manifest.json || echo "linux/amd64")
-          echo "Platforms: $PLAT"
-          # build and load locally (use --push to push)
-          docker buildx build --platform "$PLAT" -t "$IMAGE_NAME" . --load
+          host: ${{ secrets.SERVER_HOST }}
+          username: ${{ secrets.SERVER_USER }}
+          key: ${{ secrets.SERVER_KEY }}
+          script: |
+            docker pull myorg/myapp:latest
+            docker stop my-app || true
+            docker rm my-app || true
+            docker run -d --name my-app -p 80:3000 myorg/myapp:latest
