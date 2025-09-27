@@ -6,7 +6,7 @@
 
 Автоматическая настройка пайплайнов сборки
 
-Multi-платформенная поддержка (Docker, Kubernetes, Cloud)
+Multi-платформенная поддержка (Docker)
 
 Zero-config подход для стандартных проектов
 
@@ -14,21 +14,6 @@ Zero-config подход для стандартных проектов
 ____ 
 
 ## 📋 Поддерживаемые языки
-### 🦀 Rust
-Обязательные файлы:
-
-Cargo.toml - зависимости и конфигурация
-
-main.rs/lib.rs/любой .rs файл - точка входа
-
-Автоматически детектирует:
-
-Библиотеки vs исполняемые файлы
-
-Workspace проекты (multiple binaries)
-
-Features и conditional compilation
-____
 
 ### 🐍 Python
 Обязательные файлы:
@@ -36,14 +21,6 @@ ____
 pyproject.toml ИЛИ requirements.txt - зависимости
 
 main.py/любой .py файл - точка входа
-
-Поддерживает:
-
-Virtual environments (venv, poetry, pipenv)
-
-Package distributions (wheel, setuptools)
-
-ASGI/WSGI приложения
 ____
 
 ### 🐹 Go
@@ -81,7 +58,17 @@ Autotools (configure/make)
 ## Установка
 $ git clone https://github.com/ViktorLamba/Amazing-Automata.git .
  
+ ____
+## Запуск
+Необходимо добавить ваш проект в папку project/
 
+Далее прописать команду
+____
+$ bash ci/ci-scripts/build.sh
+____
+( ВАЖНО! Убедитесь что вы находитесь по пути диск:/ваша_директория/Amazing-Automata )
+
+upd: Необходима ветка git "dev"
 
 # 🏗️ Структура проекта
 
