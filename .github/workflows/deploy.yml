@@ -20,7 +20,7 @@ jobs:
           key: ${{ secrets.SERVER_KEY }}
           script: |
             # Путь на сервере, куда клонируем репозиторий
-            PROJECT_DIR="/root/myproject"
+            PROJECT_DIR="/root/Amazing-Automata"
 
             # Клонируем или обновляем
             cd "$PROJECT_DIR" || git clone git@github.com:ViktorLamba/Amazing-Automata.git "$PROJECT_DIR"
