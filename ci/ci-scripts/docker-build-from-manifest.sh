@@ -51,7 +51,9 @@ EOF
     python)
       cat >> "$DOCKERFILE_PATH" <<EOF
 FROM python:3.11
-COPY . .
+WORKDIR /
+COPY . /
+ENV PYTHONUNBUFFERED=1
 RUN python -m pip install --upgrade pip
 EOF
       if [ -n "$DEPS_FILE" ]; then
@@ -64,15 +66,24 @@ CMD ["python", "$ENTRY"]
 EOF
       ;;
     go)
-      cat >> "$DOCKERFILE_PATH" <<'EOF'
+      cat >> "$DOCKERFILE_PATH" <<EOF
 FROM golang:1.20-alpine AS build
 WORKDIR /src
-COPY . /src
-RUN apk add --no-cache build-base git && go mod download && CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -o /out/app ./...
+
+COPY . .
+
+RUN apk add --no-cache build-base git
+
+WORKDIR /src/project
+
+RUN go mod download
+
+# билдим весь модуль
+RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -o /out/app ./...
 
 FROM alpine:3.18
 COPY --from=build /out/app /usr/local/bin/app
-CMD ["/usr/local/bin/app"]
+ENTRYPOINT ["/usr/local/bin/app"]
 EOF
       ;;
     cpp)
