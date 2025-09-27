@@ -21,6 +21,7 @@ LANGUAGE=$(jq -r '.language // "unknown"' "$MANIFEST")
 HAS_DOCKERFILE=$(jq -r '.has_dockerfile // false' "$MANIFEST")
 ENTRY=$(jq -r '.entry // empty' "$MANIFEST")
 DEPS_FILE=$(jq -r '.deps_file // empty' "$MANIFEST")
+DATABASE=$(jq -r '.database // "unknown-database"' "$MANIFEST")
 TARGETS=$(jq -r '.targets | join(",") // "linux/amd64"' "$MANIFEST")
 PROJECT_DIR=$(dirname "$MANIFEST")
 
@@ -30,13 +31,43 @@ echo "➡️  Entry: $ENTRY"
 [ -n "$DEPS_FILE" ] && echo "📦 Deps file: $DEPS_FILE"
 echo "📂 Project dir: $PROJECT_DIR"
 echo "🎯 Targets: $TARGETS"
+echo "🗄 Database: $DATABASE"
 
-if [ ! -d "$PROJECT_DIR" ]; then
-  echo "❌ Project directory not found: $PROJECT_DIR" >&2
-  exit 2
-fi
+# --- 1) Запуск временной БД контейнера на случайном порту ---
+DB_CONTAINER=""
+DB_PORT=""
+case "$DATABASE" in
+  mysql)
+    echo "🐬 Starting MySQL container..."
+    DB_CONTAINER="ci-mysql-$(date +%s)"
+    DB_PORT=$(shuf -i 33060-33100 -n 1)
+    docker run -d --name "$DB_CONTAINER" -e MYSQL_ROOT_PASSWORD=root -e MYSQL_DATABASE=testdb -p "$DB_PORT":3306 mysql:8
+    export DB_HOST=host.docker.internal
+    export DB_PORT=3306
+    export DB_USER=root
+    export DB_PASSWORD=root
+    export DB_NAME=testdb
+    ;;
+  postgres)
+    echo "🐘 Starting PostgreSQL container..."
+    DB_CONTAINER="ci-postgres-$(date +%s)"
+    DB_PORT=$(shuf -i 54320-54400 -n 1)
+    docker run -d --name "$DB_CONTAINER" -e POSTGRES_PASSWORD=root -e POSTGRES_DB=testdb -p "$DB_PORT":5432 postgres:16
+    export DB_HOST=host.docker.internal
+    export DB_PORT=5432
+    export DB_USER=postgres
+    export DB_PASSWORD=root
+    export DB_NAME=testdb
+    ;;
+  unknown-database)
+    echo "⚠️ No database detected. Skipping DB container."
+    ;;
+  *)
+    echo "⚠️ Unsupported database '$DATABASE'. Skipping DB container."
+    ;;
+esac
 
-# --- Используем Dockerfile проекта или генерируем временный ---
+# --- 2) Dockerfile проект или временный ---
 if [ "$HAS_DOCKERFILE" = "true" ] && [ -f "$PROJECT_DIR/Dockerfile" ]; then
   echo "✅ Using project's Dockerfile"
   DOCKERFILE_PATH="$PROJECT_DIR/Dockerfile"
@@ -51,70 +82,69 @@ EOF
     python)
       cat >> "$DOCKERFILE_PATH" <<EOF
 FROM python:3.11
-WORKDIR /
-COPY . /
+WORKDIR /app
+COPY . /app
 ENV PYTHONUNBUFFERED=1
 RUN python -m pip install --upgrade pip
 EOF
-      if [ -n "$DEPS_FILE" ]; then
-        cat >> "$DOCKERFILE_PATH" <<EOF
+      [ -n "$DEPS_FILE" ] && cat >> "$DOCKERFILE_PATH" <<EOF
 RUN pip install -r "$DEPS_FILE"
+EOF
+      if [ "$DATABASE" != "unknown-database" ]; then
+        cat >> "$DOCKERFILE_PATH" <<EOF
+ENV DB_HOST=$DB_HOST
+ENV DB_PORT=$DB_PORT
+ENV DB_USER=$DB_USER
+ENV DB_PASSWORD=$DB_PASSWORD
+ENV DB_NAME=$DB_NAME
 EOF
       fi
       cat >> "$DOCKERFILE_PATH" <<EOF
 CMD ["python", "$ENTRY"]
 EOF
       ;;
+    cpp)
+      # Находим CMakeLists.txt
+      CMAKE_DIR=$(find "$PROJECT_DIR" -name "CMakeLists.txt" -exec dirname {} \; | head -n1 || true)
+      if [ -n "$CMAKE_DIR" ]; then
+          RELATIVE_CMAKE_DIR=${CMAKE_DIR#$PROJECT_DIR/}
+          cat >> "$DOCKERFILE_PATH" <<EOF
+FROM ubuntu:24.04 AS builder
+WORKDIR /src/$RELATIVE_CMAKE_DIR
+RUN apt-get update && apt-get install -y build-essential cmake git pkg-config ca-certificates file && rm -rf /var/lib/apt/lists/*
+COPY . .
+RUN mkdir -p build && cd build && cmake .. && cmake --build . -j\$(nproc)
+RUN BIN=\$(find build -type f -executable -exec file {} \; | grep ELF | cut -d: -f1 | head -n1) && cp "\$BIN" /usr/local/bin/app
+FROM ubuntu:24.04
+COPY --from=builder /usr/local/bin/app /usr/local/bin/app
+CMD ["/usr/local/bin/app"]
+EOF
+      else
+          echo "⚠️ CMakeLists.txt not found, using fallback g++ build"
+          cat >> "$DOCKERFILE_PATH" <<EOF
+FROM ubuntu:24.04
+WORKDIR /src
+RUN apt-get update && apt-get install -y build-essential file && rm -rf /var/lib/apt/lists/*
+COPY . .
+RUN g++ $ENTRY -o /usr/local/bin/app
+CMD ["/usr/local/bin/app"]
+EOF
+      fi
+      ;;
     go)
       cat >> "$DOCKERFILE_PATH" <<EOF
 FROM golang:1.20-alpine AS build
 WORKDIR /src
-
 COPY . .
-
 RUN apk add --no-cache build-base git
-
 WORKDIR /src/project
-
 RUN go mod download
-
-# билдим весь модуль
 RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -o /out/app ./...
-
 FROM alpine:3.18
 COPY --from=build /out/app /usr/local/bin/app
 ENTRYPOINT ["/usr/local/bin/app"]
 EOF
       ;;
-    cpp)
-  echo "⚙️ Generating temporary Dockerfile for C++"
-  cat >> "$DOCKERFILE_PATH" <<'EOF'
-FROM ubuntu:24.04 AS builder
-WORKDIR /src
-
-RUN apt-get update && apt-get install -y --no-install-recommends \
-    build-essential cmake git pkg-config ca-certificates file && \
-    rm -rf /var/lib/apt/lists/*
-
-# Копируем весь проект
-COPY . .
-
-# Сборка проекта (подставляем реальный путь)
-RUN mkdir -p build && cd build && \
-    cmake /src/project/test/all && \
-    cmake --build . -j$(nproc)
-
-# Берём первый ELF-бинарник и копируем в /usr/local/bin/app
-RUN BIN=$(find build -type f -executable -exec file {} \; | grep ELF | cut -d: -f1 | head -n1) && \
-    cp "$BIN" /usr/local/bin/app
-
-FROM ubuntu:24.04
-COPY --from=builder /usr/local/bin/app /usr/local/bin/app
-CMD ["/usr/local/bin/app"]
-EOF
-  ;;
-
-
     *)
       cat >> "$DOCKERFILE_PATH" <<EOF
 FROM alpine:3.18
@@ -125,7 +155,7 @@ EOF
   esac
 fi
 
-# --- Build image ---
+# --- 3) Build image ---
 PLATFORMS="$TARGETS"
 if [ "$BUILDX" = "true" ]; then
   docker buildx inspect >/dev/null 2>&1 || docker buildx create --use
@@ -134,6 +164,12 @@ else
   docker build -f "$DOCKERFILE_PATH" -t "$IMAGE_NAME" "$PROJECT_DIR"
 fi
 
-# --- Cleanup ---
+# --- 4) Cleanup ---
 [ "$DOCKERFILE_PATH" = "$PROJECT_DIR/Dockerfile.ci" ] && rm -f "$DOCKERFILE_PATH"
+if [ -n "$DB_CONTAINER" ]; then
+  echo "🧹 Stopping temporary DB container $DB_CONTAINER..."
+  docker stop "$DB_CONTAINER" >/dev/null
+  docker rm "$DB_CONTAINER" >/dev/null
+fi
+
 echo "✅ Done."

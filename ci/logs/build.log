@@ -1,0 +1,181 @@
+2025-09-27T12:30:18+03:00 Starting unified build...
+📦 Language: unknown
+📄 Dockerfile present: false
+➡️  Entry: src/main.py
+📂 Project dir: .
+🗄 Database: mysql
+2025-09-27T13:02:18+03:00 Starting unified build...
+📦 Language: cpp
+📄 Dockerfile present: false
+➡️  Entry: project/test/doc/main.cpp
+📦 Deps file: project/test/doc/Makefile
+📂 Project dir: .
+🗄 Database: mysql
+2025-09-27T13:20:02+03:00 Starting unified build...
+📦 Language: cpp
+📄 Dockerfile present: false
+➡️  Entry: project/test/docs/main.cpp
+📦 Deps file: project/test/docs/Makefile
+📂 Project dir: .
+🗄 Database: mysql
+2025-09-27T13:22:54+03:00 Starting unified build...
+📦 Language: cpp
+📄 Dockerfile present: false
+➡️  Entry: project/test/docs/main.cpp
+📦 Deps file: project/test/docs/Makefile
+📂 Project dir: .
+🗄 Database: mysql
+2025-09-27T13:39:33+03:00 Starting unified build...
+📦 Language: cpp
+📄 Dockerfile present: false
+➡️  Entry: project/test/docs/main.cpp
+📦 Deps file: project/test/docs/Makefile
+📂 Project dir: .
+🗄 Database: mysql
+2025-09-27T13:48:25+03:00 Starting unified build...
+📦 Language: cpp
+📄 Dockerfile present: false
+➡️  Entry: project/test/docs/main.cpp
+📦 Deps file: project/test/docs/Makefile
+📂 Project dir: .
+🗄 Database: mysql
+2025-09-27T13:48:44+03:00 Starting unified build...
+📦 Language: cpp
+📄 Dockerfile present: false
+➡️  Entry: project/test/docs/main.cpp
+📦 Deps file: project/test/docs/Makefile
+📂 Project dir: .
+🗄 Database: mysql
+2025-09-27T13:51:21+03:00 Starting unified build...
+📦 Language: cpp
+📄 Dockerfile present: false
+➡️  Entry: project/test/docs/main.cpp
+📦 Deps file: project/test/docs/Makefile
+📂 Project dir: .
+🗄 Database: mysql
+2025-09-27T13:52:26+03:00 Starting unified build...
+📦 Language: cpp
+📄 Dockerfile present: false
+➡️  Entry: project/test/docs/main.cpp
+📦 Deps file: project/test/docs/Makefile
+📂 Project dir: .
+🗄 Database: mysql
+2025-09-27T14:01:35+03:00 Starting unified build...
+📦 Language: python
+📄 Dockerfile present: false
+➡️  Entry: project/Jarvis-Desktop-Voice-Assistant/Jarvis/jarvis.py
+📦 Deps file: project/Jarvis-Desktop-Voice-Assistant/requirements.txt
+📂 Project dir: .
+🗄 Database: unknown-database
+2025-09-27T14:04:21+03:00 Starting unified build...
+📦 Language: python
+📄 Dockerfile present: false
+➡️  Entry: project/Jarvis/jarvis.py
+📦 Deps file: project/requirements.txt
+📂 Project dir: .
+🗄 Database: unknown-database
+2025-09-27T14:05:10+03:00 Starting unified build...
+📦 Language: python
+📄 Dockerfile present: false
+➡️  Entry: project/Jarvis/jarvis.py
+📦 Deps file: project/requirements.txt
+📂 Project dir: .
+🗄 Database: 
+2025-09-27T14:07:20+03:00 Starting unified build...
+📦 Language: python
+📄 Dockerfile present: false
+➡️  Entry: project/Jarvis/jarvis.py
+📦 Deps file: project/requirements.txt
+📂 Project dir: .
+🗄 Database: 
+2025-09-27T14:10:17+03:00 Starting unified build...
+📦 Language: python
+📄 Dockerfile present: false
+➡️  Entry: project/Jarvis/jarvis.py
+📦 Deps file: project/requirements.txt
+📂 Project dir: .
+🗄 Database: unknown-database
+2025-09-27T14:19:22+03:00 Starting unified build...
+📦 Language: python
+📄 Dockerfile present: false
+➡️  Entry: project/Jarvis/jarvis.py
+📦 Deps file: project/requirements.txt
+📂 Project dir: .
+🗄 Database: unknown-database
+2025-09-27T14:25:05+03:00 Starting unified build...
+📦 Language: python
+📄 Dockerfile present: false
+➡️  Entry: project/Jarvis/jarvis.py
+📦 Deps file: project/requirements.txt
+📂 Project dir: .
+🗄 Database: postgres
+2025-09-27T14:26:24+03:00 Starting unified build...
+📦 Language: python
+📄 Dockerfile present: false
+➡️  Entry: project/Jarvis/jarvis.py
+📦 Deps file: project/requirements.txt
+📂 Project dir: .
+🗄 Database: unknown-database
+2025-09-27T14:28:04+03:00 Starting unified build...
+📦 Language: python
+📄 Dockerfile present: false
+➡️  Entry: project/Jarvis/jarvis.py
+📦 Deps file: project/requirements.txt
+📂 Project dir: .
+🗄 Database: unknown-database
+2025-09-27T14:28:39+03:00 Starting unified build...
+📦 Language: python
+📄 Dockerfile present: false
+➡️  Entry: project/Jarvis/jarvis.py
+📦 Deps file: project/requirements.txt
+📂 Project dir: .
+🗄 Database: unknown-database
+2025-09-27T14:31:50+03:00 Starting unified build...
+📦 Language: python
+📄 Dockerfile present: false
+➡️  Entry: project/Jarvis/jarvis.py
+📦 Deps file: project/requirements.txt
+📂 Project dir: .
+🗄 Database: mysql
+2025-09-27T14:37:28+03:00 Starting unified build...
+📦 Language: python
+📄 Dockerfile present: false
+➡️  Entry: project/Jarvis/jarvis.py
+📦 Deps file: project/requirements.txt
+📂 Project dir: .
+🗄 Database: mysql
+2025-09-27T14:38:54+03:00 Starting unified build...
+📦 Language: python
+📄 Dockerfile present: false
+➡️  Entry: project/Jarvis/jarvis.py
+📦 Deps file: project/requirements.txt
+📂 Project dir: .
+🗄 Database: mysql
+2025-09-27T14:40:07+03:00 Starting unified build...
+📦 Language: python
+📄 Dockerfile present: false
+➡️  Entry: project/Jarvis/jarvis.py
+📦 Deps file: project/requirements.txt
+📂 Project dir: .
+🗄 Database: mysql
+2025-09-27T14:41:19+03:00 Starting unified build...
+📦 Language: python
+📄 Dockerfile present: false
+➡️  Entry: project/Jarvis/jarvis.py
+📦 Deps file: project/requirements.txt
+📂 Project dir: .
+🗄 Database: mysql
+2025-09-27T14:43:02+03:00 Starting unified build...
+📦 Language: python
+📄 Dockerfile present: false
+➡️  Entry: project/Jarvis/jarvis.py
+📦 Deps file: project/requirements.txt
+📂 Project dir: .
+🗄 Database: mysql
+2025-09-27T14:44:36+03:00 Starting unified build...
+📦 Language: python
+📄 Dockerfile present: false
+➡️  Entry: project/Jarvis/jarvis.py
+📦 Deps file: project/requirements.txt
+📂 Project dir: .
+🗄 Database: mysql
