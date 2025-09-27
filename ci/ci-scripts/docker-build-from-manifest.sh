@@ -61,31 +61,26 @@ CMD ["python", "/$ENTRY"]
 EOF
       ;;
     go)
-      cat >> "$DOCKERFILE_PATH" <<'EOF'
+      cat >> "$DOCKERFILE_PATH" <<EOF
 FROM golang:1.20-alpine AS build
 WORKDIR /src
-COPY . /src
-RUN apk add --no-cache build-base git && \
-    go mod download && \
-    CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -o /out/app ./...
+
+COPY . .
+
+RUN apk add --no-cache build-base git
+
+WORKDIR /src/project
+
+RUN go mod download
+
+# билдим весь модуль
+RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -o /out/app ./...
 
 FROM alpine:3.18
 RUN adduser -D appuser
 COPY --from=build /out/app /usr/local/bin/app
 USER appuser
 ENTRYPOINT ["/usr/local/bin/app"]
-EOF
-      ;;
-    rust)
-      cat >> "$DOCKERFILE_PATH" <<'EOF'
-FROM rust:1.72 AS builder
-WORKDIR /src
-COPY . /src
-RUN cargo build --release || true
-FROM debian:bookworm-slim
-WORKDIR /
-COPY --from=builder /src/target/release/* /usr/local/bin/
-CMD ["sh", "-c", "/usr/local/bin/$(basename ${ENTRY} .rs)"]
 EOF
       ;;
     cpp)
