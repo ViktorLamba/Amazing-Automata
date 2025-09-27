@@ -179,3 +179,10 @@
 📦 Deps file: project/requirements.txt
 📂 Project dir: .
 🗄 Database: mysql
+2025-09-27T15:51:30+03:00 Starting unified build...
+📦 Language: python
+📄 Dockerfile present: false
+➡️  Entry: project/example/main.py
+📦 Deps file: project/example/requirements.txt
+📂 Project dir: .
+🗄 Database: unknown-database

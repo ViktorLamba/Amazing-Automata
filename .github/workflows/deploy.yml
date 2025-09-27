@@ -3,7 +3,7 @@ name: CI/CD Docker App
 on:
   push:
     branches:
-      - ready-example
+      - dev
 
 jobs:
   deploy:
