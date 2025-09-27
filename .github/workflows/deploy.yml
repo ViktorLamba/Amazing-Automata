@@ -3,7 +3,7 @@ name: CI/CD Docker App
 on:
   push:
     branches:
-      - ci-out-project-test
+      - ready-example
 
 jobs:
   deploy:
@@ -25,7 +25,7 @@ jobs:
             # Клонируем или обновляем
             cd "$PROJECT_DIR" || git clone git@github.com:ViktorLamba/Amazing-Automata.git "$PROJECT_DIR"
             cd "$PROJECT_DIR"
-            git pull origin ci-out-project-test
+            git pull origin ready-example
 
             # Собираем образ через твой скрипт
             bash ci/ci-scripts/build.sh project/manifest.json auto-project:latest true
