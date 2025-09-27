@@ -51,26 +51,19 @@ EOF
     python)
       cat >> "$DOCKERFILE_PATH" <<EOF
 FROM python:3.11
-
-# Копируем весь проект
 COPY . .
-
-# Установка pip
 RUN python -m pip install --upgrade pip
 EOF
-
       if [ -n "$DEPS_FILE" ]; then
         cat >> "$DOCKERFILE_PATH" <<EOF
 RUN pip install -r "$DEPS_FILE"
 EOF
       fi
-
       cat >> "$DOCKERFILE_PATH" <<EOF
 CMD ["python", "$ENTRY"]
 EOF
       ;;
     go)
-      # --- Остальной код для Go без изменений ---
       cat >> "$DOCKERFILE_PATH" <<'EOF'
 FROM golang:1.20-alpine AS build
 WORKDIR /src
@@ -82,38 +75,36 @@ COPY --from=build /out/app /usr/local/bin/app
 CMD ["/usr/local/bin/app"]
 EOF
       ;;
-    rust)
-      # --- Rust без изменений ---
-      cat >> "$DOCKERFILE_PATH" <<'EOF'
-FROM rust:1.72 AS builder
-WORKDIR /src
-COPY . /src
-RUN cargo build --release || true
-
-FROM debian:bookworm-slim
-COPY --from=builder /src/target/release/* /usr/local/bin/
-CMD ["sh", "-c", "/usr/local/bin/$(basename ${ENTRY} .rs)"]
-EOF
-      ;;
     cpp)
-      # --- C++ без изменений ---
-      cat >> "$DOCKERFILE_PATH" <<'EOF'
+  echo "⚙️ Generating temporary Dockerfile for C++"
+  cat >> "$DOCKERFILE_PATH" <<'EOF'
 FROM ubuntu:24.04 AS builder
 WORKDIR /src
-RUN apt-get update && apt-get install -y --no-install-recommends \
-    build-essential cmake git pkg-config ca-certificates && rm -rf /var/lib/apt/lists/*
-COPY . /src
-RUN mkdir -p build && cd build && cmake .. && make -j$(nproc) || true
 
-FROM ubuntu:24.04 AS runtime
-RUN mkdir -p /usr/local/bin
-COPY --from=builder /src/build /tmp/build
-RUN for f in /tmp/build/*; do [ -x "$f" ] && cp "$f" /usr/local/bin/ || true; done
-CMD ["/usr/local/bin/$(basename ${ENTRY} .cpp)"]
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    build-essential cmake git pkg-config ca-certificates file && \
+    rm -rf /var/lib/apt/lists/*
+
+# Копируем весь проект
+COPY . .
+
+# Сборка проекта (подставляем реальный путь)
+RUN mkdir -p build && cd build && \
+    cmake /src/project/test/all && \
+    cmake --build . -j$(nproc)
+
+# Берём первый ELF-бинарник и копируем в /usr/local/bin/app
+RUN BIN=$(find build -type f -executable -exec file {} \; | grep ELF | cut -d: -f1 | head -n1) && \
+    cp "$BIN" /usr/local/bin/app
+
+FROM ubuntu:24.04
+COPY --from=builder /usr/local/bin/app /usr/local/bin/app
+CMD ["/usr/local/bin/app"]
 EOF
-      ;;
+  ;;
+
+
     *)
-      # --- fallback ---
       cat >> "$DOCKERFILE_PATH" <<EOF
 FROM alpine:3.18
 COPY . .
@@ -127,20 +118,11 @@ fi
 PLATFORMS="$TARGETS"
 if [ "$BUILDX" = "true" ]; then
   docker buildx inspect >/dev/null 2>&1 || docker buildx create --use
-  if [ "$PUSH" = "true" ]; then
-    docker buildx build --platform "$PLATFORMS" -t "$IMAGE_NAME" --push -f "$DOCKERFILE_PATH" "$PROJECT_DIR"
-  else
-    if [ "$LOAD_LOCAL" = "true" ]; then
-      docker buildx build --platform "$PLATFORMS" -t "$IMAGE_NAME" --load -f "$DOCKERFILE_PATH" "$PROJECT_DIR"
-    else
-      docker buildx build --platform "$PLATFORMS" -t "$IMAGE_NAME" -f "$DOCKERFILE_PATH" "$PROJECT_DIR"
-    fi
-  fi
+  docker buildx build --platform "$PLATFORMS" -t "$IMAGE_NAME" --load -f "$DOCKERFILE_PATH" "$PROJECT_DIR"
 else
   docker build -f "$DOCKERFILE_PATH" -t "$IMAGE_NAME" "$PROJECT_DIR"
-  [ "$PUSH" = "true" ] && docker push "$IMAGE_NAME"
 fi
 
-# Удаляем временный Dockerfile
+# --- Cleanup ---
 [ "$DOCKERFILE_PATH" = "$PROJECT_DIR/Dockerfile.ci" ] && rm -f "$DOCKERFILE_PATH"
 echo "✅ Done."
