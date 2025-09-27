@@ -1,0 +1,62 @@
+2025-09-27T12:30:18+03:00 Starting unified build...
+📦 Language: unknown
+📄 Dockerfile present: false
+➡️  Entry: src/main.py
+📂 Project dir: .
+🗄 Database: mysql
+2025-09-27T13:02:18+03:00 Starting unified build...
+📦 Language: cpp
+📄 Dockerfile present: false
+➡️  Entry: project/test/doc/main.cpp
+📦 Deps file: project/test/doc/Makefile
+📂 Project dir: .
+🗄 Database: mysql
+2025-09-27T13:20:02+03:00 Starting unified build...
+📦 Language: cpp
+📄 Dockerfile present: false
+➡️  Entry: project/test/docs/main.cpp
+📦 Deps file: project/test/docs/Makefile
+📂 Project dir: .
+🗄 Database: mysql
+2025-09-27T13:22:54+03:00 Starting unified build...
+📦 Language: cpp
+📄 Dockerfile present: false
+➡️  Entry: project/test/docs/main.cpp
+📦 Deps file: project/test/docs/Makefile
+📂 Project dir: .
+🗄 Database: mysql
+2025-09-27T13:39:33+03:00 Starting unified build...
+📦 Language: cpp
+📄 Dockerfile present: false
+➡️  Entry: project/test/docs/main.cpp
+📦 Deps file: project/test/docs/Makefile
+📂 Project dir: .
+🗄 Database: mysql
+2025-09-27T13:48:25+03:00 Starting unified build...
+📦 Language: cpp
+📄 Dockerfile present: false
+➡️  Entry: project/test/docs/main.cpp
+📦 Deps file: project/test/docs/Makefile
+📂 Project dir: .
+🗄 Database: mysql
+2025-09-27T13:48:44+03:00 Starting unified build...
+📦 Language: cpp
+📄 Dockerfile present: false
+➡️  Entry: project/test/docs/main.cpp
+📦 Deps file: project/test/docs/Makefile
+📂 Project dir: .
+🗄 Database: mysql
+2025-09-27T13:51:21+03:00 Starting unified build...
+📦 Language: cpp
+📄 Dockerfile present: false
+➡️  Entry: project/test/docs/main.cpp
+📦 Deps file: project/test/docs/Makefile
+📂 Project dir: .
+🗄 Database: mysql
+2025-09-27T13:52:26+03:00 Starting unified build...
+📦 Language: cpp
+📄 Dockerfile present: false
+➡️  Entry: project/test/docs/main.cpp
+📦 Deps file: project/test/docs/Makefile
+📂 Project dir: .
+🗄 Database: mysql
