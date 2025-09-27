@@ -54,6 +54,7 @@ EOF
 FROM python:3.11
 WORKDIR /
 COPY . /
+ENV PYTHONUNBUFFERED=1
 RUN python -m pip install --upgrade pip
 RUN if [ -n "$DEPS_FILE" ] && [ -f "/$DEPS_FILE" ]; then pip install -r "/$DEPS_FILE"; fi
 CMD ["python", "/$ENTRY"]
