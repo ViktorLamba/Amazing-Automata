@@ -87,12 +87,19 @@ $ git clone https://github.com/ViktorLamba/Amazing-Automata.git .
 
 Amazing-Automata/
 ├── ci/
+
 │   ├── ci-scripts/
+
 │   │   └── detect-entry.sh    # Детектор языков
+
 │   └── manifest.json          # Генерируемый манифест
+
 ├── project/                   # Ваш проект (симлинк или копия)
+
 ├── Makefile                   # Управление задачами
+
 ├── .deployrc                 # Конфигурация развертывания
+
 └── README.md
 
 # 🙏 Благодарности
@@ -102,7 +109,7 @@ Amazing-Automata/
 # ⭐️ Команда проекта
 
 ### Виктор Ламба
-тгк - https://t.me/viiiii_tyok
+тгк - @viiiii_tyok
 git - @ViktorLamba
 
 ### Дмитрий Ефимов
