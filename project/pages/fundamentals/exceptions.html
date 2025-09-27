@@ -1,0 +1,844 @@
+﻿<h1>Go中的一些语法/语义例外</h1>
+
+<p>
+本篇文章将列出Go中的各种语法和语义例外。
+这些例外中的一些属于方便编程的语法糖，一些属于内置泛型特权，一些源于历史原因或者其它各种逻辑原因。
+</p>
+
+<a class="anchor" id="nest-function-calls"></a>
+<h3>嵌套函数调用</h3>
+
+<div>
+基本规则：
+<div class="alert alert-info">
+如果一个函数（包括方法）调用的返回值个数不为零，并且它的返回值列表可以用做另一个函数调用的实参列表，则此前者调用可以被内嵌在后者调用之中，但是此前者调用不可和其它的实参混合出现在后者调用的实参列表中。
+</div>
+
+语法糖：
+<div class="alert alert-success">
+如果一个函数调用刚好返回一个结果，则此函数调用总是可以被当作一个单值实参用在其它函数调用中，并且此函数调用可以和其它实参混合出现在其它函数调用的实参列表中。
+</div>
+
+<!--
+例外（对于Go官方工具链1.15之前的版本）：
+<div class="alert alert-success">
+对于官方标准编译器，上述基本规则不适用于内置函数<code>print</code>和<code>println</code>。这两个函数的调用不能内嵌多返回值函数调用。
+</div>
+-->
+
+例子：
+<pre class="line-numbers"><code class="language-go">package main
+
+import (
+	"fmt"
+)
+
+func f0() float64 {return 1}
+func f1() (float64, float64) {return 1, 2}
+func f2(float64, float64) {}
+func f3(float64, float64, float64) {}
+func f4()(x, y []int) {return}
+func f5()(x map[int]int, y int) {return}
+
+type I interface {m()(float64, float64)}
+type T struct{}
+func (T) m()(float64, float64) {return 1, 2}
+
+func main() {
+	// 这些行编译没问题。
+	f2(f0(), 123)
+	f2(f1())
+	fmt.Println(f1())
+	_ = complex(f1())
+	_ = complex(T{}.m())
+	f2(I(T{}).m())
+
+	// 这些行编译不通过。
+	/*
+	f3(123, f1())
+	f3(f1(), 123)
+	*/
+
+	// 此行从Go官方工具链1.15开始才能够编译通过。
+	println(f1())
+
+	// 下面这三行从Go官方工具链1.13开始才能够编译通过。
+	copy(f4())
+	delete(f5())
+	_ = complex(I(T{}).m())
+}
+</code></pre>
+</div>
+
+<!--
+<h3>Unused Variables</h3>
+
+<div>
+The basic rule:
+<div class="alert alert-info">
+Local variables can't be declared but not used.
+</div>
+
+Exception:
+<div class="alert alert-success">
+Function parameter and result variables,
+which can also be viewed as local variables,
+are allowed to be not used.
+</div>
+</div>
+-->
+
+<h3>选择结构体字段值</h3>
+
+<div>
+基本规则：
+<div class="alert alert-info">
+指针类型和值没有字段。
+</div>
+
+语法糖：
+<div class="alert alert-success">
+我们可以通过一个结构体值的指针来选择此结构体的字段。
+</div>
+
+例子：
+<pre class="line-numbers"><code class="language-go">package main
+
+type T struct {
+	x int
+}
+
+func main() {
+	var t T
+	var p = &t
+
+	p.x *= 2
+	// 上一行是下一行的语法糖。
+	(*p).x *= 2
+}
+</code></pre>
+</div>
+
+<h3>方法调用的属主实参</h3>
+
+<div>
+基本规则：
+<div class="alert alert-info">
+为类型<code>*T</code>显式声明的方法肯定不是类型<code>T</code>的方法。
+</div>
+
+语法糖：
+<div class="alert alert-success">
+尽管为类型<code>*T</code>显式声明的方法肯定不是类型<code>T</code>的方法，但是可寻址的<code>T</code>值可以用做这些方法的调用的属主实参。
+</div>
+
+例子：
+<pre class="line-numbers"><code class="language-go">package main
+
+type T struct {
+	x int
+}
+
+func (pt *T) Double() {
+	pt.x *= 2
+}
+
+func main() {
+	// T{3}.Double() // error: T值没有Double方法。
+
+	var t = T{3}
+
+	t.Double() // 现在：t.x == 6
+	// 上一行是下一行的语法糖。
+	(&t).Double() // 现在：t.x == 12
+}
+</code></pre>
+</div>
+
+<h3>取组合字面量的地址</h3>
+
+<div>
+基本规则：
+<div class="alert alert-info">
+组合字面量是不可寻址的，并且是不可寻址的值是不能被取地址的。
+</div>
+
+语法糖：
+<div class="alert alert-success">
+尽管组合字面量是不可寻址的，它们仍可以被显式地取地址。
+</div>
+
+<p>
+请阅读<a href="struct.html#take-composite-literal-address">结构体</a>和<a href="container.html#take-composite-literal-address">内置容器类型</a>两篇文章获取详情。
+</p>
+</div>
+
+<h3>指针值和选择器</h3>
+
+<div>
+基本规则：
+<div class="alert alert-info">
+一般说来，<a href="type-system-overview.html#named-type">具名</a>的指针类型的值不能使用在选择器语法形式中。
+</div>
+
+语法糖：
+<div class="alert alert-info">
+如果值<code>x</code>的类型为一个一级具名指针类型，并且<code>(*x).f</code>是一个合法的选择器，则<code>x.f</code>也是合法的。
+</div>
+
+<p>
+任何多级指针均不能出现在选择器语法形式中。
+</p>
+
+上述语法糖的例外：
+<div class="alert alert-success">
+上述语法糖只对<code>f</code>为字段的情况才有效，对于<code>f</code>为方法的情况无效。
+</div>
+
+例子：
+<pre class="line-numbers"><code class="language-go">package main
+
+type T struct {
+	x int
+}
+
+func (T) y() {
+}
+
+type P *T
+type PP **T // 一个多级指针类型
+
+func main() {
+	var t T
+	var p P = &t
+	var pt = &t   // pt的类型为*T
+	var ppt = &pt // ppt的类型为**T
+	var pp PP = ppt
+	_ = pp
+
+	_ = (*p).x // 合法
+	_ = p.x    // 合法（因为x为一个字段）
+
+	_ = (*p).y // 合法
+	// _ = p.y // 不合法（因为y为一个方法）
+
+	// 下面的选择器均不合法。
+	/*
+	_ = ppt.x
+	_ = ppt.y
+	_ = pp.x
+	_ = pp.y
+	*/
+}
+</code></pre>
+</div>
+
+<!--
+<h3>Precedences Of Unary Operators</h3>
+
+<div>
+The basic rule:
+<div class="alert alert-info">
+For any operand, its post operator has a higher precedence than its pre operator if the post operator
+is not a <a href="https://golang.google.cn/ref/spec#Operators">binary operator</a>.
+</div>
+
+Sugar:
+<div class="alert alert-success">
+Assume operand <code>ptr</code> is a pointer value, in <code>*ptr++</code>, operator <code>*</code> has
+a higher precedence than operator <code>++</code>, a.k.a., <code>*ptr++</code> is equivalent to
+<code>(*ptr)++</code>, for pointer arithmetic is not supported in Go.
+</div>
+
+Example:
+<pre class="line-numbers"><code class="language-go">package main
+
+import (
+	"fmt"
+)
+
+type T struct{}
+
+func (t T) M() *int {
+	var v = 123
+	return &v
+}
+
+func main() {
+	var t = &T{}
+	var a = *t.M()
+	var b = *(t.M())
+	// The above two lines are equivalent.
+	var c = (*t).M()
+	fmt.Printf("%T %T %T\n", a, b, c) // int int *int
+
+	var s = [...]int{0, 1, 2}
+	var u = &s[0]
+	var v = &(s[0])
+	// The above two lines are equivalent.
+	var w = (&s)[0]
+	fmt.Printf("%T %T %T\n", u, v, w) // *int *int int
+
+	// sugar
+
+	var x = new(int)
+	*x++ // *x == 1 now
+	// The Above line is a sugar for
+	(*x)++
+}
+</code></pre>
+</div>
+-->
+
+<h3>容器和容器元素的可寻址性</h3>
+
+<div>
+基本规则：
+<div class="alert alert-info">
+如果一个容器值是可寻址的，则它的元素也是可寻址的。
+</div>
+
+例外：
+<div class="alert alert-success">
+一个映射值的元素总是不可寻址的，即使此映射本身是可寻址的。
+</div>
+
+语法糖：
+<div class="alert alert-success">
+一个切片值的元素总是可寻址的，即使此切片值本身是不可寻址的。
+</div>
+例子：
+<pre class="line-numbers"><code class="language-go">package main
+
+func main() {
+	var m = map[string]int{"abc": 123}
+	_ = &m // okay
+
+	// 例外。
+	// p = &m["abc"] // error: 映射元素不可寻址
+
+	// 语法糖。
+	f := func() []int {
+		return []int{0, 1, 2}
+	}
+	// _ = &f() // error: 函数调用是不可寻址的
+	_ = &f()[2] // okay
+}
+</code></pre>
+</div>
+
+<h3>修改值</h3>
+
+<div>
+基本规则：
+<div class="alert alert-info">
+不可寻址的值不可修改。
+</div>
+
+例外：
+<div class="alert alert-success">
+尽管映射元素是不可寻址的，但是它们可以被修改（但是它们必须被整个覆盖修改）。
+</div>
+
+例子：
+<pre class="line-numbers"><code class="language-go">package main
+
+func main() {
+	type T struct {
+		x int
+	}
+
+	var mt = map[string]T{"abc": {123}}
+	// _ = &mt["abc"]     // 映射元素是不可寻址的
+	// mt["abc"].x = 456  // 部分修改是不允许的
+	mt["abc"] = T{x: 789} // 整体覆盖修改是可以的
+}
+</code></pre>
+</div>
+
+<h3>函数参数</h3>
+
+<div>
+基本规则：
+<div class="alert alert-info">
+函数的每个参数一般为某个类型一个值。
+</div>
+
+例外：
+<div class="alert alert-success">
+内置<code>make</code>和<code>new</code>函数的第一个参数为一个类型。
+</div>
+
+</div>
+
+<h3>同一个代码包中的函数命名</h3>
+
+<div>
+基本规则：
+<div class="alert alert-info">
+同一个代码包中声明的函数的名称不能重复。
+</div>
+
+例外：
+<div class="alert alert-success">
+同一个代码包中可以声明若干个名为<code>init</code>类型为<code>func()</code>的函数。
+</div>
+
+</div>
+
+<h3>函数调用</h3>
+
+<div>
+基本规则：
+<div class="alert alert-info">
+名称为非空标识符的函数可以被调用。
+</div>
+
+例外：
+<div class="alert alert-success">
+<code>init</code>函数不可被调用。
+</div>
+
+</div>
+
+<h3>函数值</h3>
+
+<div>
+基本规则：
+<div class="alert alert-info">
+声明的函数可以被用做函数值。
+</div>
+
+<!--
+例外1：
+<div class="alert alert-success">
+内置函数（展示在<code>builtin</code>和<code>unsafe</code>标准库包中的函数）不可被用做函数值。
+</div>
+
+	var _ = panic
+	var _ = unsafe.Sizeof
+-->
+
+例外：
+<div class="alert alert-success">
+<code>init</code>函数不可被用做函数值。
+</div>
+
+例子：
+<pre class="line-numbers"><code class="language-go">package main
+
+import "fmt"
+import "unsafe"
+
+func init() {}
+
+func main() {
+	// 这两行编译没问题。
+	var _ = main
+	var _ = fmt.Println
+
+	// 下面这行编译不通过。
+	var _ = init
+}
+</code></pre>
+</div>
+
+<a class="anchor" id="generic-arguments-passing"></a>
+<h3>泛型类型实参的传递方式</h3>
+
+<div>
+基本规则：
+<div class="alert alert-info">
+在泛型类型实参列表中，所有实参均包裹在同一对方括号中，各个实参之间使用逗号分开
+</div>
+
+例外：
+<div class="alert alert-success">
+内置泛型类型的类型实参传递形态各异。映射类型的键值类型实参单独包裹在一对方括号中，其它实参并没有被包裹。
+内置<code>new</code>泛型函数的类型实参是包裹在一对圆括号中。
+内置<code>make</code>泛型函数的类型实参是和值实参混杂在一起并包裹在同一对圆括号中。
+</div>
+
+</div>
+
+<a class="anchor" id="discard-return-results"></a>
+<h3>舍弃函数调用返回值</h3>
+
+<div>
+
+基本规则：
+<div class="alert alert-info">
+一个函数调用的所有返回值可以被一并忽略舍弃。
+</div>
+
+例外：
+<div class="alert alert-success">
+内置函数（展示在<code>builtin</code>和<code>unsafe</code>标准库包中的函数）调用的返回值不能被舍弃。
+</div>
+
+例外中的例外：
+<div class="alert alert-success">
+内置函数<code>copy</code>和<code>recover</code>的调用的返回值可以被舍弃。
+</div>
+
+</div>
+
+<h3>声明的变量</h3>
+
+<div>
+基本规则：
+<div class="alert alert-info">
+声明的变量总是可寻址的。
+</div>
+
+例外：
+<div class="alert alert-success">
+<a href="https://golang.google.cn/pkg/builtin/#pkg-variables">预声明的<code>nil</code></a>变量是不可寻址的。
+</div>
+
+所以，预声明的<code>nil</code>是一个不可更改的变量。
+</div>
+
+<h3>传参</h3>
+
+<div>
+基本规则：
+<div class="alert alert-info">
+当一个实参被传递给对应的形参时，此实参必须能够赋值给此形参类型。
+</div>
+
+语法糖：
+<div class="alert alert-success">
+如果内置函数<code>copy</code>和<code>append</code>的一个调用的第一个形参为一个字节切片（这时，一般来说，第二形参也应该是一个字节切片），则第二个形参可以是一个字符串，即使字符串不能被赋给一个字节切片。
+（假设<code>append</code>函数调用的第二个形参使用<code>arg...</code>形式传递。）
+</div>
+
+例子：
+<pre class="line-numbers"><code class="language-go">package main
+
+func main() {
+	var bs = []byte{1, 2, 3}
+	var s = "xyz"
+
+	copy(bs, s)
+	// 上一行是下一行的语法糖和优化。
+	copy(bs, []byte(s))
+
+	bs = append(bs, s...)
+	// 上一行是下一行的语法糖和优化。
+	bs = append(bs, []byte(s)...)
+}
+</code></pre>
+</div>
+
+<h3>比较</h3>
+
+<div>
+基本规则：
+<div class="alert alert-success">
+映射、切片和函数类型是不支持比较的。
+</div>
+
+例外：
+<div class="alert alert-success">
+映射、切片和函数值可以和预声明标识符<code>nil</code>比较。
+</div>
+
+例子：
+<pre class="line-numbers"><code class="language-go">package main
+
+func main() {
+	var s1 = []int{1, 2, 3}
+	var s2 = []int{7, 8, 9}
+	//_ = s1 == s2 // error: 切片值不可比较。
+	_ = s1 == nil  // ok
+	_ = s2 == nil  // ok
+
+	var m1 = map[string]int{}
+	var m2 = m1
+	// _ = m1 == m2 // error: 映射值不可比较。
+	_ = m1 == nil   // ok
+	_ = m2 == nil   // ok
+
+	var f1 = func(){}
+	var f2 = f1
+	// _ = f1 == f2 // error: 函数值不可比较。
+	_ = f1 == nil   // ok
+	_ = f2 == nil   // ok
+}
+</code></pre>
+</div>
+
+<h3>比较二</h3>
+
+<div>
+基本规则：
+<div class="alert alert-info">
+如果一个值可以隐式转换为一个可比较类型，则这此值和此可比较类型的值可以用<code>==</code>和<code>!=</code>比较符来做比较。
+</div>
+
+例外：
+<div class="alert alert-success">
+一个不可比较类型（一定是一个非接口类型）的值不能和一个接口类型的值比较，即使此不可比较类型实现了此接口类型（从而此不可比较类型的值可以被隐式转换为此接口类型）。
+</div>
+
+请阅读<a href="value-conversions-assignments-and-comparisons.html#comparison-rules">值比较规则</a>获取详情。
+</div>
+
+<!--
+<h3>Comparing Interface Values</h3>
+
+<div>
+The basic rule:
+<div class="alert alert-info">
+Comparing interface values with uncomparable dynamic values will panic.
+</div>
+
+Exception:
+<div class="alert alert-success">
+If the dynamic types of two interface values are not the same one,
+then comparing them will never panic,
+even if either of the two dynamic values are uncomparable.
+</div>
+
+Example:
+<pre class="line-numbers"><code class="language-go">package main
+
+func main() {
+	var s = []int{1, 2, 3}
+	var m = map[string]int{}
+	var x interface{} = s
+	var y interface{} = m
+	var z interface{} = nil
+	// The dynamic values of x and y are both uncomparable.
+	//_ = x == x // will panic
+	//_ = y == y // will panic
+	_ = x == z // false, will not panic
+	_ = x == y // false, will not panic
+}
+</code></pre>
+</div>
+-->
+
+<h3>空组合字面量</h3>
+
+<div>
+基本规则：
+<div class="alert alert-info">
+如果一个类型<code>T</code>的值可以用组合字面量表示，则<code>T{}</code>表示此类型的零值。
+</div>
+
+例外：
+<div class="alert alert-success">
+对于一个映射或者切片类型<code>T</code>，<code>T{}</code>不是它的零值，它的零值使用预声明的<code>nil</code>表示。
+</div>
+
+例子：
+<pre class="line-numbers"><code class="language-go">package main
+
+import "fmt"
+
+func main() {
+	// new(T)返回类型T的一个零值的地址。
+
+	type T0 struct {
+		x int
+	}
+	fmt.Println( T0{} == *new(T0) ) // true
+	type T1 [5]int
+	fmt.Println( T1{} == *new(T1) ) // true
+
+	type T2 []int
+	fmt.Println( T2{} == nil ) // false
+	type T3 map[int]int
+	fmt.Println( T3{} == nil ) // false
+}
+</code></pre>
+</div>
+
+<a class="anchor" id="container-elements-iteration"></a>
+<h3>容器元素遍历</h3>
+
+<div>
+基本规则：
+<div class="alert alert-info">
+只有容器值可以跟在<code>range</code>关键字后，<code>for-range</code>循环遍历出来的是容器值的各个元素。
+每个容器元素对应的键值（或者索引）也将被一并遍历出来。
+</div>
+
+例外1：
+<div class="alert alert-success">
+当<code>range</code>关键字后跟的是字符串时，遍历出来的是码点值，而不是字符串的各个元素byte字节值。
+</div>
+
+例外2：
+<div class="alert alert-success">
+当<code>range</code>关键字后跟的是通道时，通道的元素的键值（次序）并未被一同遍历出来。
+</div>
+
+语法糖：
+<div class="alert alert-success">
+尽管数组指针不属于容器，但是<code>range</code>关键字后可以跟数组指针来遍历数组元素。
+</div>
+
+</div>
+
+<h3>内置类型的方法</h3>
+
+<div>
+基本规则：
+<div class="alert alert-info">
+内置类型都没有方法。
+</div>
+
+例外：
+<div class="alert alert-success">
+内置类型<code>error</code>有一个<code>Error() string</code>方法。
+</div>
+</div>
+
+<!--
+<h3>Identifier Visibility</h3>
+
+<div>
+The basic rule:
+<div class="alert alert-info">
+The identifiers not starting with Unicode upper case letters can't be exported.
+</div>
+
+Exception:
+<div class="alert alert-success">
+Identifiers starting with Unicode lower case letter in the <code>builtin</code> package
+can be exported.
+</div>
+</div>
+-->
+
+<h3>值的类型</h3>
+
+<div>
+基本规则：
+<div class="alert alert-info">
+每个值要么有一个确定的类型要么有一个默认类型。
+</div>
+
+例外：
+<div class="alert alert-success">
+类型不确定的<code>nil</code>值既没有确定的类型也没有默认类型。
+</div>
+
+</div>
+
+<h3>常量值</h3>
+
+<div>
+基本规则：
+<div class="alert alert-info">
+常量值的值固定不变。常量值可以被赋给变量值。
+</div>
+
+例外1：
+<div class="alert alert-success">
+预声明的<code>iota</code>是一个绑定了<code>0</code>的常量，但是它的值并不固定。
+在一个包含多个常量描述的常量声明中，如果一个<code>iota</code>的值出现在一个常量描述中，则它的值将被自动调整为此常量描述在此常量声明中的次序值，尽管此调整发生在编译时刻。
+</div>
+
+例外2：
+<div class="alert alert-success">
+<code>iota</code>只能被用于常量声明中，它不能被赋给变量。
+</div>
+
+</div>
+
+<a class="anchor" id="behaviors-on-missing-optional-result"></a>
+<h3>舍弃表达式中可选的结果值对程序行为的影响</h3>
+
+<div>
+基本规则：
+<div class="alert alert-info">
+表达式中可选的结果值是否被舍弃不会对程序行为产生影响。
+</div>
+
+例外：
+<div class="alert alert-success">
+当一个失败的类型断言表达式的可选的第二个结果值被舍弃时，当前协程将产生一个恐慌。
+</div>
+
+例子：
+<pre class="line-numbers"><code class="language-go">package main
+
+func main() {
+	var ok bool
+
+	var m = map[int]int{}
+	_, ok = m[123]
+	_ = m[123] // 不会产生恐慌
+
+	var c = make(chan int, 2)
+	c <- 123
+	close(c)
+	_, ok = <-c
+	_ = <-c // 不会产生恐慌
+
+	var v interface{} = "abc"
+	_, ok = v.(int)
+	_ = v.(int) // 将产生一个恐慌！
+}
+</code></pre>
+
+</div>
+
+<a class="anchor" id="code-block-following-else"></a>
+<h3><code>else</code>关键字后跟随另一个代码块</h3>
+
+<div>
+基本规则：
+<div class="alert alert-info">
+<code>else</code>关键字后必须跟随一个显式代码块<code>{...}</code>。
+</div>
+
+语法糖：
+<div class="alert alert-success">
+<code>else</code>关键字后可以跟随一个（隐式）<code>if</code>代码块，
+</div>
+
+比如，在下面这个例子中，函数<code>foo</code>编译没问题，但是函数<code>bar</code>编译不过。
+<pre class="line-numbers"><code class="language-go">func f() []int {
+	return nil
+}
+
+func foo() {
+	if vs := f(); len(vs) == 0 {
+	} else if len(vs) == 1 {
+	}
+
+	if vs := f(); len(vs) == 0 {
+	} else {
+		switch {
+		case len(vs) == 1:
+		default:
+		}
+	}
+	
+	if vs := f(); len(vs) == 0 {
+	} else {
+		for _, _ = range vs {
+		}
+	}
+}
+
+func bar() {
+	if vs := f(); len(vs) == 0 {
+	} else switch { // error
+	case len(vs) == 1:
+	default:
+	}
+	
+	if vs := f(); len(vs) == 0 {
+	} else for _, _ = range vs { // error
+	}
+}
+</code></pre>
+
+</div>
+

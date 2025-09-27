@@ -1,0 +1,1157 @@
+﻿<h1>Go问答101</h1>
+
+<p><i>
+	（这是一份非官方Go问答列表。官方版问答列表<a href="https://golang.google.cn/doc/faq">在这里</a>。）
+</i></p>
+
+<div>
+索引：
+
+<ul class="summaries" id="unofficial-faq.html">
+<li>编译器与运行时
+	<ul class="index">
+	<li><a class="index" href="#error-non-name">编译器错误信息<code>non-name *** on left side of :=</code>意味着什么?</a></li>
+	<li><a class="index" href="#error-missing-left-brace">编译器错误信息<code>unexpected newline, expecting { after if clause</code>意味着什么?</a></li>
+	<li><a class="index" href="#error-declared-not-used">编译器错误信息<code>declared and not used</code>意味着什么?</a></li>
+	<li><a class="index" href="#map-iteration-order">Go运行时是否维护映射条目的遍历顺序？</a></li>
+	<li><a class="index" href="#compiler-field-padding">Go编译器是否会进行字节填充以确保结构体字段的地址对齐？</a></li>
+	<li><a class="index" href="#final-zero-size-field">为什么一个结构体类型的最后一个字段类型的尺寸为零时会影响此结构体类型的尺寸？</a></li>
+	<li><a class="index" href="#new-function"><code>new(T)</code>是<code>var t T; (&amp;t)</code>的语法糖吗？</a></li>
+	<li><a class="index" href="#fatal-error-deadlock">运行时错误信息<code>all goroutines are asleep - deadlock</code>意味着什么?</a></li>
+	<li><a class="index" href="#64-bit-alignment">64位整数值的地址是否能保证总是64位对齐的，以便可以被安全地原子访问？</a></li>
+	<li><a class="index" href="#atomical-assignment">赋值是原子操作吗？</a></li>
+	<li><a class="index" href="#zero-values-zero-bytes">是否每一个零值在内存中占据的字节都是零？</a></li>
+	<li><a class="index" href="#function-inline">标准的Go编译器是否支持函数内联？</a></li>
+	<li><a class="index" href="#finalizers">终结器（finalizer）可以用做对象的析构函数吗？</a></li>
+	</ul>
+</li>
+
+<li>标准库
+	<ul class="index">
+	<li><a class="index" href="#get-days-of-month">如何使用尽可能短的代码行数来获取任意月份的天数？</a></li>
+	<li><a class="index" href="#time-sleep-after">函数调用<code>time.Sleep(d)</code>和通道接收<code>&lt;-time.After(d)</code>操作之间有何区别？</a></li>
+	<li><a class="index" href="#trim">调用<code>strings</code>和<code>bytes</code>标准库包里<code>TrimLeft</code>和<code>TrimRight</code>函数经常会返回不符预期的结果，这些函数的实现存在bugs吗？</a></li>
+	<li><a class="index" href="#fmt-print-println">函数<code>fmt.Print</code>和<code>fmt.Println</code>的区别是什么？</a></li>
+	<li><a class="index" href="#log-print-println">函数<code>log.Print</code>和函数<code>log.Println</code>有什么区别吗?</a></li>
+	<li><a class="index" href="#fmt-print-synced">函数<code>fmt.Print</code>、<code>fmt.Println</code>和<code>fmt.Printf</code>的实现进行同步了吗？</a></li>
+	<li><a class="index" href="#print-builtin-fmt-log">内置的<code>print</code>和<code>println</code>函数与<code>fmt</code>和<code>log</code>标准库包中相应的打印函数有什么区别？</a></li>
+	<li><a class="index" href="#math-crypto-rand">通过标准库包<code>math/rand</code>和<code>crypto/rand</code>生成的随机数之间有什么区别？</a></li>
+	<li><a class="index" href="#math-round">标准库中为什么没有<code>math.Round</code>函数？</a></li>
+	</ul>
+</li>
+
+<li>类型系统
+	<ul class="index">
+	<li><a class="index" href="#uncomparable-types">哪些类型不支持比较？</a></li>
+	<li><a class="index" href="#nil-equality">为什么两个<code>nil</code>值有时候会不相等？</a></li>
+	<li><a class="index" href="#slice-conversion">为什么类型<code>[]T1</code>和<code>[]T2</code>没有共享相同底层类型，即使不同的类型<code>T1</code>和<code>T2</code>共享相同的底层类型？</a></li>
+	<li><a class="index" href="#unaddressable-values">哪些值可以被取地址，哪些值不可以被取地址？</a></li>
+	<li><a class="index" href="#map-elements-are-unaddressable">为什么映射元素不可被取地址？</a></li>
+	<li><a class="index" href="#slice-elements-always-addressable">为什么非空切片的元素总是可被取地址，即便对于不可取地址的切片也是如此？</a></li>
+	<li><a class="index" href="#method-set-relation">对任意的非指针、非接口类型<code>T</code>，为什么类型<code>*T</code>的方法集总是类型<code>T</code>的方法集的超集，但是反之却不然？</a></li>
+	<li><a class="index" href="#types-can-have-methods">我们可以为哪些类型声明方法？</a></li>
+	<li><a class="index" href="#declare-immutables">在Go里如何声明不可变量？</a></li>
+	<li><a class="index" href="#set-container-type">为什么没有内置的<code>set</code>容器类型？</a></li>
+	<li><a class="index" href="#byte-rune-slice-string">什么是byte？什么是rune？如何将<code>[]byte</code>和<code>[]rune</code>的值转换为字符串？</a></li>
+	<li><a class="index" href="#pointer-atomic">如何原子地操作指针值？</a></li>
+	</ul>
+</li>
+<li>其它
+	<ul class="index">
+	<li><a class="index" href="#about-iota"><code>iota</code>是什么意思？</a></li>
+	<li><a class="index" href="#check-if-channels-closed">为什么没有一个内置的<code>closed</code>函数用来检查通道是否已经关闭？</a></li>
+	<li><a class="index" href="#return-local-pointers">函数返回局部变量的指针是否安全？</a></li>
+	<li><a class="index" href="#gopher">单词<b><i>gopher</i></b>在Go社区中表示什么？</a></li>
+	</ul>
+</li>
+
+
+</ul>
+</div>
+
+
+
+<div class="summaries-items">
+
+<!-- compiler and runtime  -->
+
+<a class="anchor" id="error-non-name"></a>
+<h3>
+	编译器错误信息<code>non-name *** on left side of :=</code>意味着什么?
+</h3>
+
+直到目前（Go 1.25）, Go中对短变量声明有一个<a href="https://golang.google.cn/ref/spec#Short_variable_declarations">强制性约束</a>：
+<div class="alert alert-success">
+所有位于<code>:=</code>符号左侧的条目都必须是纯<a href="https://golang.google.cn/ref/spec#Identifiers">标识符</a>，并且其中至少有一个为新变量名称。
+</div>
+
+<p>
+这意味着容器元素索引表达式（<code>x[i]</code>）、结构体的字段选择器（<code>x.f</code>）、指针解引用（<code>*p</code>）和限定标识符（<code>aPackage.Value</code>）都不能出现在<code>:=</code>符号的左侧。
+</p>
+
+<p>
+目前，这还是一个<a href="https://github.com/golang/go/issues/377">未解决问题</a>（已经和<a href="https://github.com/golang/go/issues/6842">一个相关问题</a>合并）。而且感觉Go核心开发团队目前<a href="https://github.com/golang/go/issues/30318">并未有立即解决此问题的打算</a>。
+</p>
+
+<a class="anchor" id="error-missing-left-brace"></a>
+<h3>
+	编译器错误信息<code>unexpected newline, expecting { ...</code>意味着什么?
+</h3>
+
+<div>
+<p>
+在编写Go代码时，我们不能随意断行。
+请阅读<a href="line-break-rules.html">代码断行规则</a>一文以了解Go代码断行规则。
+一般来说，根据这些规则，在左括号之前断行是不合法的。
+</p>
+
+例如，下列代码片段
+
+<pre class="line-numbers"><code class="language-go">if true
+{
+}
+
+for i := 0; i < 10; i++
+{
+}
+
+var _ = []int
+{
+	1, 2, 3
+}
+</code></pre>
+
+将会被编译器解释成
+
+<pre class="line-numbers"><code class="language-go">if true;
+{
+}
+
+for i := 0; i < 10; i++;
+{
+}
+
+var _ = []int;
+{
+	1, 2, 3;
+}
+</code></pre>
+
+Go编译器将为每个左大括号<code>{</code>起始的代码行报告一个语法错误。
+为避免这些报错，我们需要将上述代码重写为下面这样：
+
+<pre class="line-numbers"><code class="language-go">if true {
+}
+
+for i := 0; i < 10; i++ {
+}
+
+var _ = []int {
+	1, 2, 3,
+}
+</code></pre>
+
+</div>
+
+<a class="anchor" id="error-declared-not-used"></a>
+<h3>
+	编译器错误信息<code>declared and not used</code>意味着什么?
+</h3>
+
+<div>
+<p>
+对于标准编译器，在局部代码块中声明的每一个变量必须被至少一次用做r-value（right-hand-side value，右值）。
+</p>
+
+因此，下列代码将编译失败，因为<code>y</code>只被用做目标值（目标值都为左值）。
+
+<pre class="line-numbers"><code class="language-go">func f(x bool) {
+	var y = 1 // y被声明了但没有被用做右值
+	if x {
+		y = 2 // 这里，y被用做左值
+	}
+}
+</code></pre>
+
+<!--
+exception: https://github.com/golang/go/issues/8560
+-->
+
+</div>
+
+
+<a class="anchor" id="map-iteration-order"></a>
+<h3>
+	Go运行时是否维护映射条目的遍历顺序？
+</h3>
+
+<p>
+不。<a href="https://golang.google.cn/ref/spec#For_range">Go白皮书</a>明确提到映射元素的迭代顺序是未定义的。
+所以对于同一个映射值，它的一个遍历过程和下一个遍历过程中的元素呈现次序不保证是相同的。
+对于标准编译器，映射元素的遍历顺序是随机的。
+如果你需要固定的映射元素遍历顺序，那么你就需要自己来维护这个顺序。
+更多信息请阅读Go官方博客文章<a href="https://go.dev/blog/maps#iteration-order">Go maps in action</a>。
+</p>
+
+<p>
+但是请注意：从Go 1.12开始，标准库包中的各个打印函数的结果中，映射条目总是排了序的。
+</p>
+
+<a class="anchor" id="compiler-field-padding"></a>
+<h3>
+	Go编译器是否会进行字节填充以确保结构体字段的地址对齐？
+</h3>
+
+<p>
+至少对于标准的Go编译器和gccgo，答案是肯定的。
+具体需要填充多少个字节取决于操作系统和编译器实现。
+请阅读<a href="memory-layout.html#size-and-padding">关于Go值的内存布局</a>一文获取详情。
+</p>
+
+<!--
+<div>
+例如，标准编译器将按如下注释中的说明进行字节填充。
+<pre class="line-numbers"><code class="language-go">type T1 struct {
+	a int8
+	// 这里，在64位架构上将填充7个字节，在32结构上将填充3个字节。
+	b int64
+	c int16
+	// 这里，在64位架构上将填充6个字节，在32结构上将填充2个字节。
+}
+
+type T2 struct {
+	a int8
+	// 这里，在64位和32位架构上都将填充1个字节。
+	c int16
+	// 这里，在64位架构上将填充4个字节，在32结构上不需要填充字节。
+	b int64
+}
+</code></pre>
+<p>
+<code>T1.b</code>值的地址在内存中必须在AMD64的操作系统上对齐为8个字节，在i386的操作系统上则对齐为4个字节；
+这就是为什么在<code>T1.a</code>之后Go编译器在AMD64的操作系统上需要填充7个字节，而在i386的操作系统上则要填充3个字节。
+</p>
+<p>
+Go规范 <a href="https://golang.google.cn/ref/spec#Size_and_alignment_guarantees">为类型对齐的一些保证</a>。
+其中一个就是结构体类型的对齐是其字段类型的最大对齐。
+因此<code>T1</code>在AMD64操作系统上也是8个字节对齐的，在i386上也是4个字节对齐的（与<code>T1.b</code>, <code>int64</code>的类型类似），
+并且标准的Go编译器会确保类型的值的尺寸是该类型的对齐保证的倍数，这也是为什么在<code>T1</code>的值的结尾处：AMD64的操作系统上需要填充6个字节，i386的操作系统上需要填充2个字节。
+</p>
+<p>
+结构体内字段的顺序会影响填充，并且填充之后会影响结构体的尺寸。
+在AMD64的操作系统上，<code>T1</code>的值的尺寸是24，但是<code>T2</code>的值的尺寸是16。
+</p>
+</div>
+-->
+
+<p>
+Go编译器将不会重新排列结构体的字段来最小化结构体值的尺寸。
+因为这样做会导致意想不到的结果。
+但是，根据需要，程序员可以手工重新排序字段来实现填充最小化。
+</p>
+
+<a class="anchor" id="final-zero-size-field"></a>
+<h3>
+	为什么一个结构体类型的最后一个字段类型的尺寸为零时会影响此结构体的尺寸？
+</h3>
+
+<!--
+https://github.com/golang/go/issues/9401
+-->
+
+<div>
+<p>
+一个可寻址的结构值的所有字段都可以被取地址。
+如果非零尺寸的结构体值的最后一个字段的尺寸是零，那么取此最后一个字段的地址将会返回一个越出了为此结构体值分配的内存块的地址。
+这个返回的地址可能指向另一个被分配的内存块。
+在目前的官方Go标准运行时的实现中，如果一个内存块被至少一个依然活跃的指针引用，那么这个内存块将不会被视作垃圾因而肯定不会被回收。
+所以只要有一个活跃的指针存储着此非零尺寸的结构体值的最后一个字段的越界地址，它将阻止垃圾收集器回收另一个内存块，从而可能导致内存泄漏。
+</p>
+
+<p>
+为避免上述问题，标准的Go编译器会确保取一个非零尺寸的结构体值的最后一个字段的地址时，绝对不会返回越出分配给此结构体值的内存块的地址。
+Go标准编译器通过在需要时在结构体最后的零尺寸字段之后填充一些字节来实现这一点。
+</p>
+
+<p>
+如果一个结构体的全部字段的类型都是零尺寸的(因此整个结构体也是零尺寸的)，那么就不需要再填充字节，因为标准编译器会专门处理零尺寸的内存块。
+</p>
+
+一个例子：
+<pre class="line-numbers"><code class="language-go">package main
+
+import (
+	"unsafe"
+	"fmt"
+)
+
+func main() {
+	type T1 struct {
+		a struct{}
+		x int64
+	}
+	fmt.Println(unsafe.Sizeof(T1{})) // 8
+
+	type T2 struct {
+		x int64
+		a struct{}
+	}
+	fmt.Println(unsafe.Sizeof(T2{})) // 16
+}
+</code></pre>
+</div>
+
+<p>
+另请见<a href="https://golang.google.cn/doc/faq#zero_size_types">官方FAQ中的此问答</a>。
+</p>
+
+<a class="anchor" id="new-function"></a>
+<h3>
+	<code>new(T)</code>是<code>var t T; (&amp;t)</code>的语法糖吗？
+</h3>
+
+<p>
+虽然这两者在实现上会有一些微妙的差别，取决于编译器的具体实现，但是我们基本上可以认为这两者是等价的。
+即，通过<code>new</code>函数分配的内存块可以在栈上，也可以在堆上。
+</p>
+
+<a class="anchor" id="fatal-error-deadlock"></a>
+<h3>
+	运行时错误信息<code>all goroutines are asleep - deadlock</code>意味着什么?
+</h3>
+
+<p>
+用词<b><i>asleep</i></b>在这里其实并不准确，实际上它的意思是<b><i>处于阻塞状态</i></b>。
+</p>
+
+<p>
+因为一个处于阻塞状态的协程只能被另一个协程解除阻塞，如果程序中所有的协程都进入了阻塞状态，则它们将永远都处于阻塞状态。
+这意味着程序死锁了。一个正常运行的程序永远不应该死锁，一个死锁的程序肯定是由于逻辑实现上的bug造成的。
+因此官方Go标准运行时将在一个程序死锁时令其崩溃退出。
+</p>
+
+<a class="anchor" id="64-bit-alignment"></a>
+<h3>
+	64位整数值的地址是否能保证总是64位对齐的，以便可以被安全地原子访问？
+</h3>
+
+<p>
+传递给<code>sync/atomic</code>标准库包中的64位函数的地址必须是64位对齐的，否则调用这些函数将在运行时导致恐慌产生。
+</p>
+
+<p>
+对于标准编译器和gccgo编译器，在64位架构下，64位整数的地址将保证总是64位对齐的。
+所以它们总是可以被安全地原子访问。
+但在32位架构下，64位整数的地址仅保证是32位对齐的。
+所以原子访问某些64位整数可能会导致恐慌。
+但是，有一些方法可以保证一些64位整数总是可以被安全地原子访问。
+请阅读<a href="memory-layout.html#64bit-atomic-operation">关于Go值的内存布局</a>一文以获得详情。
+</p>
+
+<a class="anchor" id="atomical-assignment"></a>
+<h3>
+	赋值是原子操作吗？
+</h3>
+
+<p>
+对于标准编译器来说，赋值不是原子操作。
+</p>
+
+<p>
+请阅读<a href="https://golang.google.cn/doc/faq#What_operations_are_atomic_What_about_mutexes">官方FAQ中的此问答</a>以了解更多。
+</p>
+
+<a class="anchor" id="zero-values-zero-bytes"></a>
+<h3>
+	是否每一个零值在内存中占据的字节都是零？
+</h3>
+
+<div>
+<p>
+对于大部分类型，答案是肯定的。不过事实上，这依赖于编译器。
+例如，对于标准编译器，对于字符串或者浮点数类型的某些零值，此结论并不十分正确。
+</p>
+
+比如:
+<pre class="line-numbers"><code class="language-go">package main
+
+import (
+	"unsafe"
+	"fmt"
+)
+
+func main() {
+	// case 1:
+	var s = "abc"[0:0]
+	fmt.Println(s == "") // true
+	var addr = unsafe.StringData(s)
+	fmt.Println(addr) // <a-non-zero-value>
+
+	// case 2:
+	var x = 0.0
+	var y = -x
+	fmt.Println(y == 0) // true
+	var n = *(*uintptr)(unsafe.Pointer(&y))
+	fmt.Println(n) // 9223372036854775808
+}
+</code></pre>
+</div>
+
+<p>
+反过来，对于标准编译器已经支持的所有架构，如果一个值的所有字节都是零，那么这个值肯定是它的类型的零值。
+然而，Go规范并没有保证这一点。我曾听说在某些比较老的处理器上，空指针表示的内存地址并不为零。
+</p>
+
+<a class="anchor" id="function-inline"></a>
+<h3>
+	标准的Go编译器是否支持函数内联？
+</h3>
+
+<p>
+是的，标准编译器支持函数内联。编译器会自动内联一些满足某些条件的短小函数。这些内联条件可能会在不同编译器版本之间发生变化。
+</p>
+
+<div>
+目前（Go 1.25），对于标准编译器，
+<ul>
+<li>没有显式的方式来在用户代码中指定哪些函数应该被内联。</li>
+<li>尽管编译参数<code>-gcflags "-l"</code>可以阻止任何函数被内联，
+	但是并没有一个正式的方式来避免某个特定的用户函数被内联。
+	目前我们可以在函数声明前增加一行<code>//go:noinline</code> 指令来避免这个函数被内联。
+	但是此方式不保证永久有效。
+</li>
+</ul>
+</div>
+
+<a class="anchor" id="finalizers"></a>
+<h3>
+	终结器（finalizer）可以用做对象的析构函数吗？
+</h3>
+
+<p>
+在Go程序里，我们可以通过调用<code>runtime.SetFinalizer</code>函数来给一个对象设置一个终结器函数。
+一般说来，此终结器函数将在此对象被垃圾回收之前调用。
+但是终结器并非被设计为对象的析构函数。
+通过<code>runtime.SetFinalizer</code>函数设置的终结器函数并不保证总会被运行。
+因此我们不应该依赖于终结器来保证程序的正确性。
+</p>
+
+<p>
+终结器的主要用途是为了库包的维护者能够尽可能地避免因为库包使用者不正确地使用库包而带来的危害。
+例如，我们知道，当在程序中使用完某个文件后，我们应该将其关闭。
+但是有时候因为种种原因，比如经验不足或者粗心大意，导致一些文件在使用完成后并未被关闭，那么和这些文件相关的很多资源只有在此程序退出之后才能得到释放。这属于资源泄漏。
+为了尽可能地避免防止资源泄露，<code>os</code>库包的维护者将会在一个<code>os.File</code>对象被被创建的时候为之设置一个终结器。
+此终结器函数将关闭此<code>os.File</code>对象。当此<code>os.File</code>对象因为不再被使用而被垃圾回收的时候，此终结器函数将被调用。
+</p>
+
+<!-- to add best practices and more cases where finalizer doesn't work. -->
+
+<p>
+请记住，有一些终结器函数永远不会被调用，并且有时候不当的设置终结器函数将会阻止对象被垃圾回收。
+关于更多细节，请阅读<a href="https://golang.google.cn/pkg/runtime/#SetFinalizer">runtime.SetFinalizer函数的文档</a>。
+</p>
+
+<!-- 标准库  -->
+
+<a class="anchor" id="get-days-of-month"></a>
+<h3>
+	如何使用尽可能短的代码行数来获取任意月份的天数？
+</h3>
+
+<div>
+假设输入的年份是一个自然年，并且输入的月份也是一个自然月（1代表1月）。
+<pre class="line-numbers"><code class="language-go">days := time.Date(year, month+1, 0, 0, 0, 0, 0, time.UTC).Day()
+</code></pre>
+对于Go中的<code>time</code>标准库包，正常月份的去值范围为<code>[1, 12]</code>，并且每个月的起始日是<code>1</code>。
+所以，<code>y</code>年的<code>m</code>月的起始时间就是<code>time.Date(y, m, 1, 0, 0, 0, 0, time.UTC)</code>。
+<p>
+传递给<code>time.Date</code>函数的实参可以超出它们的正常范围，此函数将这些实参进行规范化。
+例如，1月32日会被转换成2月1日。
+</p>
+
+以下是一些Go语言里的日期使用示例：
+<pre class="line-numbers"><code class="language-go">package main
+
+import (
+	"time"
+	"fmt"
+)
+
+func main() {
+	// 2017-02-01 00:00:00 +0000 UTC
+	fmt.Println(time.Date(2017, 1, 32, 0, 0, 0, 0, time.UTC))
+
+	// 2017-01-31 23:59:59.999999999 +0000 UTC
+	fmt.Println(time.Date(2017, 1, 32, 0, 0, 0, -1, time.UTC))
+
+	// 2017-01-31 00:00:00 +0000 UTC
+	fmt.Println(time.Date(2017, 2, 0, 0, 0, 0, 0, time.UTC))
+
+	// 2016-12-31 00:00:00 +0000 UTC
+	fmt.Println(time.Date(2016, 13, 0, 0, 0, 0, 0, time.UTC))
+
+	// 2017-02-01 00:00:00 +0000 UTC
+	fmt.Println(time.Date(2016, 13, 32, 0, 0, 0, 0, time.UTC))
+}
+</code></pre>
+</div>
+
+<a class="anchor" id="time-sleep-after"></a>
+<h3>
+	函数调用<code>time.Sleep(d)</code>和通道接收<code>&lt;-time.After(d)</code>操作之间有何区别？
+</h3>
+
+<p>
+两者都会将当前的goroutine执行暂停一段时间。
+区别在于<code>time.Sleep(d)</code>函数调用将使当前的协程进入睡眠子状态，但是当前协程的<a href="control-flows-more.html#states-of-goroutine">（主）状态</a>依然为运行状态；
+而通道接收<code>&lt;-time.After(d)</code>操作将使当前协程进入阻塞状态。
+</p>
+
+<a class="anchor" id="trim"></a>
+<h3>
+	调用<code>strings</code>和<code>bytes</code>标准库包里<code>TrimLeft</code>和<code>TrimRight</code>函数经常会返回不符预期的结果，这些函数的实现存在bugs吗？
+</h3>
+
+<p>
+哈，我们不能保证这些函数的实现绝对没有bug，但是如果这些函数返回的结果是不符你的预期，更有可能的是你的期望是不正确的。
+</p>
+
+<div>
+标准包<code>strings</code>和<code>bytes</code>里有多个修剪（trim）函数。
+这些函数可以被分类为两组：
+<ol>
+<li>
+	<code>Trim</code>、<code>TrimLeft</code>、<code>TrimRight</code>、<code>TrimSpace</code>、<code>TrimFunc</code>、<code>TrimLeftFunc</code>和<code>TrimRightFunc</code>。
+	这些函数将修剪首尾所有满足指定（或隐含）条件的utf-8编码的Unicode码点(即rune)。（<code>TrimSpace</code>隐含了修剪各种空格符。）
+	这些函数将检查每个开头或结尾的rune值，直到遇到一个不满足条件的rune值为止。
+</li>
+<li>
+	<code>TrimPrefix</code>和<code>TrimSuffix</code>。
+	这两个函数会把指定前缀或后缀的子字符串（或子切片）作为一个整体进行修剪。
+</li>
+</ol>
+
+<p>
+<a href="https://github.com/golang/go/issues/19172">部分</a><a href="https://github.com/golang/go/issues/18160">程序员</a><a href="https://github.com/golang/go/issues/14657">会</a>把<code>TrimLeft</code>和<code>TrimRight</code>函数当作<code>TrimPrefix</code>和<code>TrimSuffix</code>函数而<a href="https://github.com/golang/go/issues/19371">误用</a>。
+自然地，函数返回的结果很可能不是预期的那样。
+</p>
+
+例如:
+<pre class="line-numbers"><code class="language-go">package main
+
+import (
+	"fmt"
+	"strings"
+)
+
+func main() {
+	var s = "abaay森z众xbbab"
+	o := fmt.Println
+	o(strings.TrimPrefix(s, "ab")) // aay森z众xbbab
+	o(strings.TrimSuffix(s, "ab")) // abaay森z众xbb
+	o(strings.TrimLeft(s, "ab"))   // y森z众xbbab
+	o(strings.TrimRight(s, "ab"))  // abaay森z众x
+	o(strings.Trim(s, "ab"))       // y森z众x
+	o(strings.TrimFunc(s, func(r rune) bool {
+		return r < 128 // trim all ascii chars
+	})) // 森z众
+}
+</code></pre>
+</div>
+
+<a class="anchor" id="fmt-print-println"></a>
+<h3>
+	函数<code>fmt.Print</code>和<code>fmt.Println</code> 的区别是什么？
+</h3>
+
+<p>
+<code>fmt.Println</code>函数总会在两个相邻的参数之间输出一个空格，然而<code>fmt.Print</code>函数仅当两个相邻的参数（的具体值）都不是字符串类型时才会在它们之间输出一个空格。
+</p>
+
+<p>
+另外一个区别是<code>fmt.Println</code>函数会在结尾写入一个换行符，但是<code>fmt.Print</code>函数不会。
+</p>
+
+<a class="anchor" id="log-print-println"></a>
+<h3>
+	函数<code>log.Print</code> 和函数 <code>log.Println</code> 有什么区别吗?
+</h3>
+
+<p>
+函数<code>log.Print</code>与<code>log.Println</code>的区别与上一个问题里描述的关于函数<code>fmt.Print</code>和<code>fmt.Println</code>的第一个区别点类似。
+</p>
+
+<p>
+这两个函数都会在结尾输出一个换行符。
+</p>
+
+<a class="anchor" id="fmt-print-synced"></a>
+<h3>
+	函数<code>fmt.Print</code>、<code>fmt.Println</code>和<code>fmt.Printf</code>的实现进行同步了吗？
+</h3>
+
+<p>
+没有。
+如果有同步的需求，请使用<code>log</code>标准库包里的相应函数。
+你可以调用<code>log.SetFlags(0)</code>来避免每一个日志行的前缀输出。
+</p>
+
+<a class="anchor" id="print-builtin-fmt-log"></a>
+<h3>
+	内置的<code>print</code>和<code>println</code>函数与<code>fmt</code>和<code>log</code>标准库包中相应的打印函数有什么区别？
+</h3>
+
+<div>
+除了上一个问题里提到的区别之外，这三组函数之间还有一些其他区别。
+<ol>
+<li>
+	内置的<code>print</code>/<code>println</code>函数总是写入标准错误。
+	<code>fmt</code>标准包里的打印函数总是写入标准输出。
+	<code>log</code>标准包里的打印函数会默认写入标准错误，然而也可以通过<code>log.SetOutput</code>函数来配置。
+</li>
+<li>
+	内置<code>print</code>/<code>println</code>函数的调用不能接受数组和结构体参数。
+</li>
+<li>
+	对于组合类型的参数，内置的<code>print</code>/<code>println</code>函数将输出参数的底层值部的地址，而<code>fmt</code>和<code>log</code>标准库包中的打印函数将输出接口参数的动态值的字面形式。
+</li>
+<li>
+	调用内置的<code>print</code>/<code>println</code>函数不会使调用参数引用的值逃逸到堆上，而<code>fmt</code>和<code>log</code>标准库包中的打印函数将使调用参数引用的值逃逸到堆上。
+</li>
+<li>
+	如果一个实参有<code>String() string</code>或<code>Error() string</code>方法，那么<code>fmt</code>和<code>log</code>标准库包里的打印函数在打印参数时会调用这两个方法，而内置的<code>print</code>/<code>println</code>函数则会忽略参数的这些方法。
+</li>
+<li>
+	内置的<code>print</code>/<code>println</code>函数不保证在未来的Go版本中继续存在。
+</li>
+</ol>
+</div>
+
+<a class="anchor" id="math-crypto-rand"></a>
+<h3>
+	标准库包<code>math/rand</code>和<code>crypto/rand</code>生成的随机数之间有什么区别？
+</h3>
+
+<p>
+通过<code>math/rand</code>标准库包生成的伪随机数序列对于给定的种子是确定的。
+这样生成的随机数不适用于安全敏感的环境中。
+如果处于加密安全目的，我们应该使用<code>crypto/rand</code>标准库包生成的伪随机数序列。
+</p>
+
+<a class="anchor" id="math-round"></a>
+<h3>
+	标准库中为什么没有<code>math.Round</code>函数?
+</h3>
+
+<p>
+<code>math.Round</code>函数是有的，但是只是从Go 1.10开始才有这个函数。
+从Go 1.10开始，标准库添加了两个新函数<code>math.Round</code>和<code>math.RoundToEven</code>。
+</p>
+
+<p>
+在Go 1.10之前，关于 <code>math.Round</code>函数是否应该被添加进标准包，经历了<a href="https://github.com/golang/go/issues/4594">很长时候的讨论</a>。
+</p>
+
+<!-- 类型系统 -->
+
+<a class="anchor" id="uncomparable-types"></a>
+<h3>
+	哪些类型不支持比较？
+</h3>
+
+
+<div>
+下列类型不支持比较：
+<ul>
+<li>映射（map）</li>
+<li>切片</li>
+<li>函数</li>
+<li>
+包含不可比较字段的结构体类型
+</li>
+<li>
+元素类型为不可比较类型的数组类型
+</li>
+</ul>
+<p>
+不支持比较的类型不能用做映射类型的键值类型。
+</p>
+</div>
+
+<div>
+请注意：
+<ul>
+<li>
+尽管映射，切片和函数值不支持比较，但是它们的值可以与类型不确定的<code>nil</code>标识符比较。
+</li>
+<li>
+如果两个接口值的动态类型相同且不可比较，那么在运行时<a href="interface.html#comparison">比较这两个接口的值</a>会产生一个恐慌。
+</li>
+</ul>
+
+<p>
+关于为什么映射，切片和函数不支持比较，请阅读Go的官方FAQ中<a href="https://golang.google.cn/doc/faq#map_keys">关于这个问答</a>。
+</p>
+
+</div>
+
+<a class="anchor" id="nil-equality"></a>
+<h3>
+	为什么两个<code>nil</code>值有时候会不相等？
+</h3>
+
+<p><i>
+（Go官方FAQ中的<a href="https://golang.google.cn/doc/faq#nil_error">这个答案</a>也回答了这个问题。）
+</i></p>
+
+<div>
+
+<p>
+一个接口值可以看作是一个包裹非接口值的盒子。被包裹在一个接口值中的非接口值的类型必须实现了此接口值的类型。
+在Go中，很多种类型的类型的零值都是用<code>nil</code>来表示的。
+一个什么都没包裹的接口值为一个零值接口值，即nil接口值。
+一个包裹着其它非接口类型的nil值的接口值并非什么都没包裹，所以它不是（或者说它不等于）一个nil接口值。
+</p>
+
+<p>
+当对一个nil接口值和一个nil非接口值进行比较时（假设它们可以比较），此nil非接口值将先被转换为nil接口值的类型，然后再进行比较；
+此转换的结果为一个包裹了此nil非接口值的一个副本的接口值，此接口值不是（或者说它不等于）一个nil接口值，所以此比较不相等。
+</p>
+
+<p>
+关于更详细的解释请阅读<a href="interface.html">接口</a>和<a href="nil.html">关于Go中的<code>nil</code></a>两篇文章。
+</p>
+
+一个示例：
+<pre class="line-numbers"><code class="language-go">package main
+
+import "fmt"
+
+func main() {
+	var pi *int = nil
+	var pb *bool = nil
+	var x interface{} = pi
+	var y interface{} = pb
+	var z interface{} = nil
+
+	fmt.Println(x == y)   // false
+	fmt.Println(x == nil) // false
+	fmt.Println(y == nil) // false
+	fmt.Println(x == z)   // false
+	fmt.Println(y == z)   // false
+}
+</code></pre>
+</div>
+
+<a class="anchor" id="slice-conversion"></a>
+<h3>
+	为什么类型<code>[]T1</code>和<code>[]T2</code>没有共享相同底层类型，即使不同的类型<code>T1</code>和<code>T2</code>共享相同的底层类型？
+</h3>
+
+<p><i>
+（不久前，Go官方FAQ也增加了<a href="https://golang.google.cn/doc/faq#convert_slice_with_same_underlying_type">一个相似的问题</a>。）
+</i></p>
+
+<div>
+<p>
+在Go语言中，仅当两个切片类型共享相同的<a href="type-system-overview.html#underlying-type">底层类型</a>时，其中一个切片类型才可以转换成另一个切片的类型而不需要使用<a href="unsafe.html"><code>unsafe</code>机制</a>。
+</p>
+
+<p>
+一个无名组合类型的底层类型是此组合类型本身。
+所以即便两个不同的类型<code>T1</code>和<code>T2</code>共享相同的底层类型，类型<code>[]T1</code>和<code>[]T2</code>也依然是不同的类型，因此它们的底层类型也是不同的。这意味着其中一个的值不能转换为另一个。
+</p>
+
+底层类型<code>[]T1</code>和<code>[]T2</code>不同的原因是：
+<ul>
+<li>把<code>[]T1</code>和<code>[]T2</code>的值相互转换的需求在实践中并不常见。</li>
+<li>使得<a href="type-system-overview.html#underlying-type">底层类型的溯源规则</a>更加简单。</li>
+</ul>
+
+<p>
+同样的原因也适用于其它组合类型。
+例如：类型<code>map[T]T1</code> 和 <code>map[T]T2</code>同样不共享相同的底层类型，即便<code>T1</code> 和 <code>T2</code>共享相同的底层类型。
+</p>
+
+类型<code>[]T1</code>的值时候有可能通过使用<code>unsafe</code>机制转换成<code>[]T2</code>的，但是一般不建议这么做：
+<pre class="line-numbers"><code class="language-go">package main
+
+import (
+	"fmt"
+	"unsafe"
+)
+
+func main() {
+	type MyInt int
+
+	var a = []int{7, 8, 9}
+	var b = *(*[]MyInt)(unsafe.Pointer(&a))
+	b[0]= 123
+	fmt.Println(a) // [123 8 9]
+	fmt.Println(b) // [123 8 9]
+	fmt.Printf("%T \n", a) // []int
+	fmt.Printf("%T \n", b) // []main.MyInt
+}
+</code></pre>
+</div>
+
+<a class="anchor" id="unaddressable-values"></a>
+<h3>
+	哪些值可以被取地址，哪些值不可以被取地址？
+</h3>
+
+<div>
+以下的值是不可以寻址的：
+<ul>
+<li>字符串的字节元素</li>
+<li>映射元素</li>
+<li>接口值的动态值（类型断言的结果）</li>
+<li>常量（包括具名常量和字面量）</li>
+<li>声明的包级别函数</li>
+<li>方法（用做函数值）</li>
+<li>中间结果值
+	<ul>
+	<li>函数调用</li>
+	<li>显式值转换</li>
+	<li>各种操作，不包含指针解引用（dereference）操作，但是包含：
+		<ul>
+		<li>通道接收操作</li>
+		<li>子字符串操作</li>
+		<li>子切片操作</li>
+		<li>加法、减法、乘法、以及除法等等。</li>
+		</ul>
+	</li>
+	</ul>
+</li>
+</ul>
+
+<div class="alert alert-success">
+请注意：<code>&amp;T{}</code>在Go里是一个语法糖，它是<code>tmp := T{}; (&amp;tmp)</code>的简写形式。
+所以<code>&amp;T{}</code>是合法的并不代表字面量<code>T{}</code>是可寻址的。
+</div>
+<p></p>
+
+以下的值是可寻址的，因此可以被取地址：
+<ul>
+<li>变量</li>
+<li>可寻址的结构体的字段</li>
+<li>可寻址的数组的元素</li>
+<li>任意切片的元素（无论是可寻址切片或不可寻址切片）</li>
+<li>指针解引用（dereference）操作</li>
+</ul>
+</div>
+
+<a class="anchor" id="maps-are-unaddressable"></a>
+<a class="anchor" id="map-elements-are-unaddressable"></a>
+<h3>
+	为什么映射元素不可被取地址？
+</h3>
+
+<p>
+在Go中，映射的设计保证一个映射值在内存允许的情况下可以加入任意个条目。
+另外为了防止一个映射中为其条目开辟的内存段支离破碎，官方标准编译器使用了哈希表来实现映射。
+并且为了保证元素索引的效率，一个映射值的底层哈希表只为其中的所有条目维护一段连续的内存段。
+因此，一个映射值随着其中的条目数量逐渐增加时，其维护的连续的内存段需要不断重新开辟来增容，并把原来内存段上的条目全部复制到新开辟的内存段上。
+另外，即使一个映射值维护的内存段没有增容，某些哈希表实现也可能在当前内存段中移动其中的条目。
+总之，映射中的元素的地址会因为各种原因而改变。
+如果映射元素可以被取地址，则Go运行时（runtime）必须在元素地址改变的时候修改所有存储了元素地址的指针值。
+这极大得增加了Go编译器和运行时的实现难度，并且严重影响了程序运行效率。
+因此，目前，Go中禁止取映射元素的地址。
+</p>
+
+<p>
+映射元素不可被取地址的另一个原因是表达式<code>aMap[key]</code>可能返回一个存储于<code>aMap</code>中的元素，也可能返回一个不存储于其中的元素零值。
+这意味着表达式<code>aMap[key]</code>在<code>(&amp;aMap[key]).Modify()</code>调用执行之后可能仍然被估值为元素零值。
+这将使很多人感到困惑，因此在Go中禁止取映射元素的地址。
+</p>
+
+<a class="anchor" id="slice-elements-always-addressable"></a>
+<h3>
+	为什么非空切片的元素总是可被取地址，即便对于不可寻址的切片也是如此？
+</h3>
+
+<div>
+切片的内部类型是一个结构体，类似于
+<pre class="line-numbers"><code class="language-go">struct {
+	elements unsafe.Pointer // 引用着一个元素序列
+	length   int
+	capacity int
+}
+</code></pre>
+<p>
+每一个切片间接引用一个元素序列。
+尽管一个非空切片是不可取地址的，它的内部元素序列需要开辟在内存中的某处因而必须是可取地址的。
+取一个切片的元素地址事实上是取内部元素序列上的元素地址。
+因此，不可寻址的非空切片的元素也是可以被取地址的。
+</p>
+</div>
+
+<!--p>
+基于同样的原因，在不可取地址的字符串上的子字符串的操作也总是可以编译通过的
+（使用标准编译器）。
+但是，我不能确定这是否是Go规范所保证的。
+</p-->
+
+<a class="anchor" id="method-set-relation"></a>
+<h3>
+	对任意的非指针和非接口类型<code>T</code>，为什么类型<code>*T</code>的方法集总是类型<code>T</code>的方法集的超集，但是反之却不然？
+</h3>
+
+<div>
+在Go语言中，为了方便，对于一个非指针和非接口类型<code>T</code>，
+<ul>
+<li>
+	一个<code>T</code>类型的值可以调用为<code>*T</code>类型的方法，但是仅当此<code>T</code>的值是可寻址的情况下。
+	编译器在调用指针属主方法前，会自动取此<code>T</code>值的地址。
+	因为不是任何<code>T</code>值都是可寻址的，所以并非任何<code>T</code>值都能够调用为类型<code>*T</code>的方法。
+	这种便利只是一个语法糖，而不是一种固有的规则。
+</li>
+<li>
+	一个<code>*T</code>类型的值可以调用为类型<code>T</code>的方法。
+	这是因为解引用指针总是合法的。
+	这种便利不仅仅是一个语法糖，它也是一种固有的规则。
+</li>
+</ul>
+<p>
+所以很合理的， <code>*T</code>的方法集总是<code>T</code>方法集的超集，但反之不然。
+</p>
+</div>
+
+<div>
+事实上，你可以认为对于每一个为类型<code>T</code>声明的方法，编译器都会为类型<code>*T</code>自动隐式声明一个同名和同签名的方法。
+详见<a href="method.html#implicit-pointer-methods">方法</a>一文。
+
+<pre class="line-numbers"><code class="language-go">func (t T) MethodX(v0 ParamType0, ...) (ResultType0, ...) {
+	...
+}
+
+// 编译器将会为*T隐式声明一个如下的方法。
+func (pt *T) MethodX(v0 ParamType0, ...) (ResultType0, ...) {
+	return (*pt).MethodX(v0, ...)
+}
+</code></pre>
+
+<!--p>
+如果在类型<code>*T</code>上定义了一个方法，那么在<code>T</code>上就再也不能定义具有相同方法名称的方法了。
+这是另一种解释为什么 <code>*T</code>的方法集总是<code>T</code>方法集的超集，但反之不然。
+</p-->
+</div>
+
+<p>
+更多解释请阅读Go官方FAQ中的<a href="https://golang.google.cn/doc/faq#different_method_sets">这个问答</a>。
+</p>
+
+<a class="anchor" id="types-can-have-methods"></a>
+<h3>
+	我们可以为哪些类型声明方法？
+</h3>
+
+<p>
+请阅读<a href="method.html">方法</a>一文获取答案。
+</p>
+
+<a class="anchor" id="declare-immutables"></a>
+<h3>
+	在Go里如何声明不可变量？
+</h3>
+
+<div>
+如下是三种<b><i>不可变值</i></b>的定义：
+<ol>
+<li>没有地址的值（所以它们不可以寻址）。</li>
+<li>有地址但是因为种种原因在语法上不可以寻址的值。</li>
+<li>可寻址但不允许在语法上被修改的值。</li>
+</ol>
+
+<p>
+在Go语言中，直到现在（Go 1.25），没有值满足第三种定义。
+但是零尺寸类型的变量值可以被视为事实上的（可被取地址的）不变量。
+</p>
+
+<p>
+具名常量值满足第一种定义。
+</p>
+
+<p>
+方法和包级函数可以被视为声明的不可变值。它们满足第二种定义。
+字符串的字节元素和映射条目中的元素值同样满足第二种定义。
+</p>
+
+<p>
+在Go中没有办法声明其它不可变值。
+</p>
+</div>
+
+<a class="anchor" id="set-container-type"></a>
+<h3>
+	为什么没有内置的<code>set</code>容器类型？
+</h3>
+
+<div>
+集合（set）可以看作是不关心元素值的映射。
+在Go语言里，<code>map[Tkey]struct{}</code>经常被用做一个集合类型。
+</div>
+
+<a class="anchor" id="byte-rune-slice-string"></a>
+<h3>
+	什么是byte？什么是rune？
+	如何将<code>[]byte</code>和<code>[]rune</code>类型的值转换为字符串？
+</h3>
+
+<p>
+在Go语言里，<code>byte</code>是<code>uint8</code>类型的一个别名。
+换言之，<code>byte</code> 和 <code>uint8</code>是相同的类型。
+<code>rune</code>和<code>int32</code>属于同样类似的关系。
+</p>
+
+<p>
+一个<code>rune</code>值通常被用来存储一个Unicode码点。
+</p>
+
+<div>
+<code>[]byte</code>和<code>[]rune</code>类型的值可以被显式地直接转换成字符串，反之亦然。
+
+<pre class="line-numbers"><code class="language-go">package main
+
+import "fmt"
+
+func main() {
+	var s0 = "Go"
+
+	var bs = []byte(s0)
+	var s1 = string(bs)
+
+	var rs = []rune(s0)
+	var s2 = string(rs)
+
+	fmt.Println(s0 == s1) // true
+	fmt.Println(s0 == s2) // true
+}
+</code></pre>
+
+<p>
+更多关于字符串的信息，请阅读<a href="string.html">Go中的字符串</a>一文。
+</p>
+</div>
+
+<a class="anchor" id="pointer-atomic"></a>
+<h3>
+	如何原子地操作指针值？
+</h3>
+
+<div>
+参见<a href="concurrent-atomic-operation.html#pointer">指针值的原子操作</a>。
+</div>
+
+<!-- 其它 -->
+
+<a class="anchor" id="about-iota"></a>
+<h3>
+	<code>iota</code>是什么意思？
+</h3>
+
+<div>
+Iota是希腊字母表中的第九个字母。
+在Go语言中，<code>iota</code>用在常量声明中。
+在每一个常量声明组中，其值在该常量声明组的第<b><i>N</i></b>个常量规范中的值为<code>N</code>。
+</div>
+
+<a class="anchor" id="check-if-channels-closed"></a>
+<h3>
+	为什么没有一个内置的<code>closed</code>函数用来检查通道是否已经关闭？
+</h3>
+
+<p>
+原因是此函数的实用性非常有限。
+此类函数调用的返回结果不能总是反映输入通道实参的最新状态。
+所以依靠此函数的返回结果来做决定不是一个好主意。
+</p>
+
+<p>
+如果你确实需要这种函数，你可以不怎么费功夫地自己写一个。
+请阅读<a href="channel-closing.html">如何优雅地关闭通道</a>一文来了解如何编写一个<code>closed</code>函数以及如何避免使用这样的函数。
+</p>
+
+<a class="anchor" id="return-local-pointers"></a>
+<h3>
+	函数返回局部变量的指针是否安全？
+</h3>
+
+<p>
+是的，在Go中这是绝对安全的。
+</p>
+
+<p>
+支持栈的Go编译器将会对每个局部变量进行逃逸分析。
+对于官方标准编译器来说，如果一个值可以在编译时刻被断定它在运行时刻仅会在一个协程中被使用，则此值将被开辟在（此协程的）栈上；否则此值将被开辟在堆上。
+请阅读<a href="memory-block.html">内存块</a>一文了解更多。
+</p>
+
+<a class="anchor" id="gopher"></a>
+<h3>
+	单词<b><i>gopher</i></b>在Go社区中表示什么？
+</h3>
+
+<p>
+在Go社区中，<b><i>gopher</i></b>表示Go程序员。
+这个昵称可能是源自于Go语言采用了<a href="https://blog.golang.com/gopher">一个卡通小地鼠（gopher）</a>做为吉祥物。
+顺便说一下，这个卡通小地鼠是由<i>Renee French</i>设计的。
+<i>Renee French</i>是Go项目首任负责人<i>Rob Pike</i>的妻子。
+</p>
+
+
+
+
+
+</div> <!-- summaries-items -->
+
+<!--
+
+why left side of := must be pure identifiers?
+* s, s[0] = []int{1, 2}, 1. The "s[0]" is an element of an old slice or the new slice?
+
+why fmt.Print function makes argument escape to heap.
+
+todo: add related go-nuts/issue links in each question.
+
+todo: also index official faq questions.
+
+is it possible to recover out of memory error?
+* https://github.com/golang/go/issues/14162
+* https://github.com/golang/go/issues/16843
+* https://groups.google.com/forum/#!topic/golang-dev/wUEWhk2jtHM
+* https://github.com/golang/go/blob/master/src/runtime/HACKING.md#error-handling-and-reporting
+
+time.Format, what do 01 02 03 04 05 06 07 mean?
+
+Why json marshal no output: fields are not exported.
+
+in go, size type is int, not uint, why?
+
+why Go doesn't support loop import like C++ and Java?
+just a tradeoff, one of many in Go.
+
+Why is there not a function to get the undrlying type of a type
+https://groups.google.com/forum/#!searchin/golang-nuts/reflect$3A$20get$20underlying$20type|sort:relevance/golang-nuts/BJEuegjQtEA/q2S3b6JxY1MJ
+
+https://www.reddit.com/r/golang/comments/8m4xrh/do_linux_golang_binaries_depend_on_libc/
+
+Why type assertion with ok fail panic?
+* while the design of Go tries to be consistent in a big view, there are really some inconsistencies at some details.
+* history reason ...
+
+why defined pointer type has no and can't own methods.
+
+Why fallthrough not allowed in select and type-switch?
+https://github.com/golang/go/issues/25676#issuecomment-393734800
+(it is feasible if the next branch is defailt or no variables are declared,
+but for consistency, ...)
+
+why break and fallthrought are not allowed in type switcn and select
+
+* why non-exported fields can be listed through reflect?
+  * for a non-exported fields can have exported fields.
+    Otherwise, there are no ways to listed the exported fields.
+
+-->
+

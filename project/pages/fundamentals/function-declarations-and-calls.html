@@ -1,0 +1,326 @@
+
+﻿<h1>函数声明和调用</h1>
+
+<p>
+除了上一篇文章介绍的运算符操作，函数操作是另一种在编程中常用的操作。
+函数操作常被称为函数调用。此篇文章将介绍如何在Go中声明和调用函数。
+</p>
+
+<a class="anchor" id="declaration"></a>
+<h3>函数声明</h3>
+
+<div>
+让我们来看一个函数声明：
+
+<pre class="line-numbers"><code class="language-go">func SquaresOfSumAndDiff(a int64, b int64) (s int64, d int64) {
+	x, y := a + b, a - b
+	s = x * x
+	d = y * y
+	return // <=> return s, d
+}
+</code></pre>
+
+从上面的例子中，我们可以发现一个函数声明从左到右由以下部分组成：
+
+<ol>
+<li>
+	第一部分是<code>func</code>关键字。
+</li>
+<li>
+	第二部分是函数名称。函数名称必须是一个标识符。
+	这里的函数名称是<code>SquareOfSumAndDiff</code>。
+</li>
+<li>
+	第三部分是输入参数列表。输入参数声明列表必须用一对小括号括起来。
+	输入参数声明有时也称为形参声明（对应后面将介绍的函数调用中的实参）。
+</li>
+<li>
+	第四部分是输出结果声明列表。在Go中，一个函数可以有多个返回值。
+	比如上面这个例子就有两个返回值。
+	当一个函数的输出结果声明列表为空或者只包含一个匿名结果声明时，此列表可以不用一对小括号括起来（见下面的示例）；否则，小括号是必需的。
+</li>
+<li>
+	最后一部分是函数体。函数体必须用一对大括号括起来。
+	一对大括号和它其间的代码形成了一个显式代码块。
+	在一个函数体内，<code>return</code>关键字可以用来结束此函数的正常向前执行流程并进入此函数的退出阶段（详见下下节中的解释）。
+</li>
+</ol>
+
+
+<p>
+在上面的例子中，每个函数参数和结果声明都由一个名字和一个类型组成（变量名字在前，类型在后）。
+我们可以把一个参数和结果声明看作是一个省略了<code>var</code>关键字的标准变量声明。
+上面这个函数有两个输入参数（<code>a</code>和<code>b</code>）以及两个输出结果（<code>x</code>和<code>y</code>）。
+它们的类型都是<code>int64</code>。
+</p>
+
+<p>
+输出结果声明列表中的所有声明中的结果名称可以（而且必须）同时出现或者同时省略。
+这两种方式在实践中都使用得很广泛。
+如果一个返回结果声明中的结果名称没有省略，则这个返回结果称为具名返回结果。否则称为匿名返回结果。
+</p>
+
+如果一个函数声明的所有返回结果均为匿名的，则在此函数体内的返回语句<code>return</code>关键字后必须跟随一系列返回值，这些返回值和此函数的各个返回结果声明一一对应。比如，下面这个函数声明和上例中的函数声明是等价的。
+
+<pre class="line-numbers"><code class="language-go">func SquaresOfSumAndDiff(a int64, b int64) (int64, int64) {
+	return (a+b) * (a+b), (a-b) * (a-b)
+}
+</code></pre>
+
+<p>
+</p>
+
+<p>
+事实上，如果一个函数声明中的所有输入参数在此函数体内都没有被使用过，则它们也可以都同时是匿名的。
+不过这种情形在实际编程中很少见。
+</p>
+
+<p>
+尽管一个函数声明中的输入参数和返回结果看上去是声明在这个函数体的外部，但是在此函数体内，这些输入参数和输出结果被当作局部变量来使用。
+但输入参数和输出结果和普通局部变量还是有一点区别的：目前的主流Go编译器不允许一个名称不为<code>_</code>的普通局部变量被声明而不有效使用。
+</p>
+
+Go不支持输入参数默认值。每个返回结果的默认值是它的类型的零值。
+比如，下面的函数在被调用时将打印出（和返回）<code>0 false</code>。
+
+<pre class="line-numbers"><code class="language-go">func f() (x int, y bool) {
+	println(x, y) // 0 false
+	return
+}
+</code></pre>
+
+<p>
+</p>
+
+和普通的变量声明一样，如果若干连续的输入参数或者返回结果的类型相同，则在它们的声明中可以共用一个类型。
+比如，上面的两个<code>SquaresOfSumAndDiff</code>函数声明和下面这个是完全等价的。
+<pre class="line-numbers"><code class="language-go">func SquaresOfSumAndDiff(a, b int64) (s, d int64) {
+	return (a+b) * (a+b), (a-b) * (a-b)
+	// 上面这行等价于下面这行：
+	// s = (a+b) * (a+b); d = (a-b) * (a-b); return
+}
+</code></pre>
+
+<p>
+注意，尽管在上面这个函数声明的返回结果都是具名的，函数体内的<code>return</code>关键字后仍然可以跟返回值。
+</p>
+
+<p>
+如果一个函数声明只包含一个返回结果，并且此返回结果是匿名的，则此函数声明中的返回结果部分不必用小括号括起来。
+如果一个函数声明的返回结果列表为空，则此函数声明中的返回结果部分可以完全被省略掉。
+一个函数声明的输入参数列表部分总不能省略掉，即使此函数声明的输入参数列表为空。
+</p>
+
+下面是更多函数声明的例子：
+<pre class="line-numbers"><code class="language-go">func CompareLower4bits(m, n uint32) (r bool) {
+	// 下面这两行等价于：return m&0xFF > n&0xff
+	r = m&0xF > n&0xf
+	return
+}
+
+// 此函数没有输入参数。它的结果声明列表只包含一个
+// 匿名结果声明，因此它不必用()括起来。
+func VersionString() string {
+	return "go1.0"
+}
+
+// 此函数没有返回结果。它的所有输入参数都是匿名的。
+// 它的结果声明列表为空，因此可以被省略掉。
+func doNothing(string, int) {
+}
+</code></pre>
+
+<p>
+</p>
+
+<p>
+在前面的《Go语言101》文章中，我们已经知道一个程序的<code>main</code>入口函数必须不带任何输入参数和返回结果。
+</p>
+
+<p>
+注意，在Go中，所有函数都必须直接声明在包级代码块中。
+或者说，任何一个函数都不能被声明在另一个函数体内。
+虽然匿名函数（将在下面的某节中介绍）可以定义在函数体内，但匿名函数定义不属于函数声明。
+</p>
+</div>
+
+<a class="anchor" id="call"></a>
+<h3>函数调用</h3>
+
+<div>
+
+<p>
+一个声明的函数可以通过它的名称和一个实参列表来调用之。
+一个实参列表必须用小括号括起来。
+实参列表中的每一个单值实参对应着（或称被传递给了）一个形参。
+</p>
+
+<p>
+注意：函数传参也属于赋值操作。在传参中，各个实参被赋值给各个对应形参。
+</p>
+
+<p>
+一个实参值的类型不必一定要和其对应的形参声明的类型一样。
+但如果一个实参值的类型和其对应的形参声明的类型不一致，则此实参必须能够隐式转换到其对应的形参的类型。
+</p>
+
+<p>
+如果一个函数带有返回值，则它的一个调用被视为一个表达式。如果此函数返回多个结果，则它的每个调用被视为一个多值表达式。
+一个多值表达式可以被同时赋值给多个目标值（数量必须匹配，各个输出结果被赋值给相对应的目标值）。
+</p>
+
+下面这个例子完整地展示了如何调用几个已经声明了的函数。
+
+<pre class="line-numbers"><code class="language-go">package main
+
+func SquaresOfSumAndDiff(a int64, b int64) (int64, int64) {
+	return (a+b) * (a+b), (a-b) * (a-b)
+}
+
+func CompareLower4bits(m, n uint32) (r bool) {
+	r = m&0xF > n&0xf
+	return
+}
+
+// 使用一个函数调用的返回结果来初始化一个包级变量。
+var v = VersionString()
+
+func main() {
+	println(v) // v1.0
+	x, y := SquaresOfSumAndDiff(3, 6)
+	println(x, y) // 81 9
+	b := CompareLower4bits(uint32(x), uint32(y))
+	println(b) // false
+	// "Go"的类型被推断为string；1的类型被推断为int32。
+	doNothing("Go", 1)
+}
+
+func VersionString() string {
+	return "v1.0"
+}
+
+func doNothing(string, int32) {
+}
+</code></pre>
+
+<p>
+从上例可以看出，一个函数的声明可以出现在它的调用之前，也可以出现在它的调用之后。
+</p>
+
+<p>
+一个函数调用可以被延迟执行或者在另一个协程（goroutine，或称绿色线程）中执行。
+<a href="control-flows-more.html">后面的一文</a>将对这两个特性进行详解。
+</p>
+</div>
+
+<a class="anchor" id="exiting-phase"></a>
+<h3>函数调用的退出阶段</h3>
+
+<p>
+在Go中，当一个函数调用返回后（比如执行了一个<code>return</code>语句或者函数中的最后一条语句执行完毕），
+此调用可能并未立即退出。一个函数调用从返回开始到最终退出的阶段称为此函数调用的退出阶段（exiting phase）。
+函数调用的退出阶段的意义将在讲解<a href="control-flows-more.html#defer">延迟函数</a>的时候体现出来。
+</p>
+
+<p>
+函数调用的退出阶段将在<a href="panic-and-recover-more.html#exiting-phase">后面的一篇文章</a>中详细解释。
+</p>
+
+<h3>匿名函数</h3>
+
+<div>
+<p>
+Go支持匿名函数。定义一个匿名函数和声明一个函数类似，但是一个匿名函数的定义中不包含函数名称部分。
+注意匿名函数定义不是一个函数声明。
+</p>
+
+一个匿名函数在定义后可以被立即调用，比如：
+
+<pre class="line-numbers"><code class="language-go">package main
+
+func main() {
+	// 这个匿名函数没有输入参数，但有两个返回结果。
+	x, y := func() (int, int) {
+		println("This function has no parameters.")
+		return 3, 4
+	}() // 一对小括号表示立即调用此函数。不需传递实参。
+
+	// 下面这些匿名函数没有返回结果。
+
+	func(a, b int) {
+		println("a*a + b*b =", a*a + b*b) // a*a + b*b = 25
+	}(x, y) // 立即调用并传递两个实参。
+
+	func(x int) {
+		// 形参x遮挡了外层声明的变量x。
+		println("x*x + y*y =", x*x + y*y) // x*x + y*y = 32
+	}(y) // 将实参y传递给形参x。
+
+	func() {
+		println("x*x + y*y =", x*x + y*y) // x*x + y*y = 25
+	}() // 不需传递实参。
+}
+</code></pre>
+
+<p>
+</p>
+
+<p>
+注意，上例中的最后一个匿名函数处于变量<code>x</code>和<code>y</code>的作用域内，所以在它的函数体内可以直接使用这两个变量。
+这样的函数称为闭包（closure）。事实上，Go中的所有的自定义函数（包括声明的函数和匿名函数）都可以被视为闭包。
+这就是为什么Go中的函数使用起来和动态语言中的函数一样灵活。
+</p>
+
+<p>
+在后面的文章中，我们将了解到一个匿名函数可以被赋值给某个函数类型的值，从而我们不必在定义完此匿名函数后立即调用它，而是可以在以后合适的时候再调用它。
+</p>
+
+</div>
+
+<h3>内置函数</h3>
+
+<div>
+<p>
+Go支持一些内置函数，比如前面的例子中已经用到过多次的<code>println</code>和<code>print</code>函数。
+我们可以不引入任何库包（见下一篇文章）而调用一个内置函数。
+</p>
+
+<p>
+我们可以使用内置函数<code>real</code>和<code>imag</code>来得到一个复数的实部和虚部（均为浮点数类型）。
+注意，如果这两个函数的任何一个调用的实参是一个常量，则此调用将在编译时刻被估值，其返回结果也是一个常量。
+此调用将被视为一个常量表达式。特别地，如果此实参是一个类型不确定值，则返回结果也是一个类型不确定值。
+</p>
+
+一个例子：
+<pre class="line-numbers"><code class="language-go">// c是一个类型不确定复数常量。
+const c = complex(1.6, 3.3)
+
+// 函数调用real(c)和imag(c)的结果都是类型
+// 不确定浮点数值。在下面这句赋值中，它们都
+// 被推断为float32类型的值。
+var a, b float32 = real(c), imag(c)
+
+// 变量d的类型被推断为内置类型complex64。
+// 函数调用real(d)和imag(d)的结果都是
+// 类型为float32的类型确定值。
+var d = complex(a, b)
+
+// 变量e的类型被推断为内置类型complex128。
+// 函数调用real(e)和imag(e)的结果都是
+// 类型为float64的类型确定值。
+var e = c
+</code></pre>
+
+<p>
+更多内置类型将在很多后面其它文章中介绍。
+</p>
+</div>
+
+<h3>更多函数相关的概念</h3>
+
+<p>
+本文是一篇Go函数入门的文章，很多其它函数相关的概念并未在此文中解释。
+今后，我们可以从<a href="function.html">函数类型和函数值</a>一文中了解到和函数相关的其它概念。
+</p>
+
+

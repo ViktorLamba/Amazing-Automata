@@ -1,0 +1,12 @@
+/golang101
+.gcloudignore
+/generated
+app.yaml
+/*.epub
+/*.mobi
+/*.html
+/*.azw*
+/*.pdf
+/*.epub
+/*.docx
+/*.doc

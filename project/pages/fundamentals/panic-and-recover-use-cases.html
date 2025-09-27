@@ -1,0 +1,328 @@
+<h1>一些恐慌/恢复用例</h1>
+
+<p>
+恐慌和恢复（panic/recover）已经<a href="control-flows-more.html#panic-recover">在之前的文章中介绍过了</a>。
+下面将展示一些恐慌/恢复用例。
+</p>
+
+<a class="anchor" id="avoid-crashing"></a>
+<h3>用例1：避免恐慌导致程序崩溃</h3>
+
+<div>
+<p>
+这可能是最常见的panic/recover用例了。
+此用例广泛地使用于并发程序中，尤其是响应大量用户请求的应用。
+</p>
+
+一个例子：
+<pre class="line-numbers"><code class="language-go">package main
+
+import "errors"
+import "log"
+import "net"
+
+func main() {
+	listener, err := net.Listen("tcp", ":12345")
+	if err != nil {
+		log.Fatalln(err)
+	}
+	for {
+		conn, err := listener.Accept()
+		if err != nil {
+			log.Println(err)
+		}
+		// 在一个新协程中处理客户端连接。
+		go ClientHandler(conn)
+	}
+}
+
+func ClientHandler(c net.Conn) {
+	defer func() {
+		if v := recover(); v != nil {
+			log.Println("捕获了一个恐慌：", v)
+			log.Println("防止了程序崩溃")
+		}
+		c.Close()
+	}()
+	panic("未知错误") // 演示目的产生的一个恐慌
+}
+</code></pre>
+
+<p>
+运行此服务器程序，并在另一个终端窗口运行<code>telnet localhost 12345</code>，我们可以观察到服务器程序不会因为客户连接处理协程中的产生的恐慌而导致崩溃。
+</p>
+
+<p>
+如果我们在上例中不捕获客户连接处理协程中的潜在恐慌，则这样的恐慌将使整个程序崩溃。
+</p>
+
+</div>
+
+<a class="anchor" id="auto-restart"></a>
+<h3>用例2：自动重启因为恐慌而退出的协程</h3>
+
+<div>
+当在一个协程将要退出时，程序侦测到此协程是因为一个恐慌而导致此次退出时，我们可以立即重新创建一个相同功能的协程。
+一个例子：
+<pre class="line-numbers"><code class="language-go">package main
+
+import "log"
+import "time"
+
+func shouldNotExit() {
+	for {
+		time.Sleep(time.Second) // 模拟一个工作负载
+		// 模拟一个未预料到的恐慌。
+		if time.Now().UnixNano() & 0x3 == 0 {
+			panic("unexpected situation")
+		}
+	}
+}
+
+func NeverExit(name string, f func()) {
+	defer func() {
+		if v := recover(); v != nil { // 侦测到一个恐慌
+			log.Printf("协程%s崩溃了，准备重启一个", name)
+			go NeverExit(name, f) // 重启一个同功能协程
+		}
+	}()
+	f()
+}
+
+func main() {
+	log.SetFlags(0)
+	go NeverExit("job#A", shouldNotExit)
+	go NeverExit("job#B", shouldNotExit)
+	select{} // 永久阻塞主线程
+}
+</code></pre>
+</div>
+
+<a class="anchor" id="long-jump"></a>
+<h3>用例3：使用<code>panic</code>/<code>recover</code>函数调用模拟长程跳转</h3>
+
+<div>
+<p>
+有时，我们可以使用<code>panic</code>/<code>recover</code>函数调用来模拟跨函数跳转，尽管一般这种方式并不推荐使用。
+这种跳转方式的可读性不高，代码效率也不是很高，唯一的好处是它有时可以使代码看上去不是很啰嗦。
+</p>
+
+在下面这个例子中，一旦一个恐慌在一个内嵌函数中产生，当前协程中的执行将会跳转到延迟调用处。
+<pre class="line-numbers"><code class="language-go">package main
+
+import "fmt"
+
+func main() {
+	n := func () (result int)  {
+		defer func() {
+			if v := recover(); v != nil {
+				if n, ok := v.(int); ok {
+					result = n
+				}
+			}
+		}()
+
+		func () {
+			func () {
+				func () {
+					// ...
+					panic(123) // 用恐慌来表示成功返回
+				}()
+				// ...
+			}()
+		}()
+		// ...
+		return 0
+	}()
+	fmt.Println(n) // 123
+}
+</code></pre>
+</div>
+
+<a class="anchor" id="avoid-verbose"></a>
+<h3>用例4：使用<code>panic</code>/<code>recover</code>函数调用来减少错误检查代码</h3>
+
+<div>
+
+一个例子：
+
+<pre class="line-numbers"><code class="language-go">func doSomething() (err error) {
+	defer func() {
+		switch e := recover().(type) {
+		case nil:
+		case error:
+			err = e
+		default:
+			panic(e) // 重新抛出此恐慌
+		}
+	}()
+
+	doStep1()
+	doStep2()
+	doStep3()
+	doStep4()
+	doStep5()
+
+	return
+}
+
+// 在现实中，各个doStepN函数的原型可能不同。
+// 这里，每个doStepN函数的行为如下：
+// * 如果已经成功，则调用panic(nil)来制造一个恐慌
+//   以示不需继续；
+// * 如果本步失败，则调用panic(err)来制造一个恐慌
+//   以示不需继续；
+// * 不制造任何恐慌表示继续下一步。
+func doStepN() {
+	...
+	if err != nil {
+		panic(err)
+	}
+	...
+	if done {
+		panic(nil)
+	}
+}
+</code></pre>
+
+<p>
+下面这段同功能的代码比上面这段代码看上去要啰嗦一些。
+</p>
+
+<pre class="line-numbers"><code class="language-go">func doSomething() (err error) {
+	shouldContinue, err := doStep1()
+	if !shouldContinue {
+		return err
+	}
+	shouldContinue, err = doStep2()
+	if !shouldContinue {
+		return err
+	}
+	shouldContinue, err = doStep3()
+	if !shouldContinue {
+		return err
+	}
+	shouldContinue, err = doStep4()
+	if !shouldContinue {
+		return err
+	}
+	shouldContinue, err = doStep5()
+	if !shouldContinue {
+		return err
+	}
+
+	return
+}
+
+// 如果返回值err不为nil，则shouldContinue一定为true。
+// 如果shouldContinue为true，返回值err可能为nil或者非nil。
+func doStepN() (shouldContinue bool, err error) {
+	...
+	if err != nil {
+		return false, err
+	}
+	...
+	if done {
+		return false, nil
+	}
+	return true, nil
+}
+</code></pre>
+
+<!--
+<pre class="line-numbers"><code class="language-go">package main
+
+import "fmt"
+
+func doTask(n int) {
+	if n%2 != 0 {
+		// 产生一个演示目的恐慌。
+		panic(fmt.Errorf("bad number: %v", n))
+	}
+	return
+}
+
+func doSomething() (err error) {
+	defer func() {
+		// 这里第二个可选结果可以忽略但不能省略，否则如果
+		// recover调用返回nil，则类型断言将产生一个新的恐慌。
+		err, _ = recover().(error)
+	}()
+
+	doTask(22)
+	doTask(98)
+	doTask(100)
+	doTask(53)
+	return nil
+}
+
+func main() {
+	fmt.Println(doSomething()) // bad number: 53
+}
+</code></pre>
+
+<p>
+下面这段同功能的代码比上面这段代码看上去要啰嗦一些。
+</p>
+
+<pre class="line-numbers"><code class="language-go">func doTask(n int) error {
+	if n%2 != 0 {
+		return fmt.Errorf("bad number: %v", n)
+	}
+	return nil
+}
+
+func doSomething() (err error) {
+	err = doTask(22)
+	if err != nil {
+		return
+	}
+	err = doTask(98)
+	if err != nil {
+		return
+	}
+	err = doTask(100)
+	if err != nil {
+		return
+	}
+	err = doTask(53)
+	if err != nil {
+		return
+	}
+	return
+}
+</code></pre>
+-->
+
+<p>
+但是，这种<code>panic</code>/<code>recover</code>函数调用的使用方式一般并不推荐使用，因为它的效率略低一些，并且这种用法不太符合Go编程习俗。
+</p>
+
+另外需要注意的是：从Go 1.21开始，一个<code>panic(nil)</code>调用将<a href="https://github.com/golang/go/issues/25448">变得和<code>panic(new(runtime.PanicNilError))</code>等价</a>。
+所以，从Go 1.21开始，上面代码中的延迟函数调用应该被重写为：
+
+<pre class="line-numbers"><code class="language-go">import "runtime"
+
+...
+
+func doSomething() (err error) {
+	defer func() {
+		switch e := recover().(type) {
+		case nil, *runtime.PanicNilError:
+		case error:
+			err = e
+		default:
+			panic(e) // 重新抛出此恐慌
+		}
+	}()
+
+	doStep1()
+	...
+}
+</code></pre>
+
+<p>
+</p>
+</div>
+
+

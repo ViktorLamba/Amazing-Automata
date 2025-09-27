@@ -1,0 +1,698 @@
+﻿<h1>方法</h1>
+
+<p>
+Go支持一些面向对象编程特性，方法是这些所支持的特性之一。
+本篇文章将介绍在Go中和方法相关的各种概念。
+</p>
+
+<h3>方法声明</h3>
+
+<div>
+在Go中，我们可以为类型<code>T</code>和<code>*T</code>显式地声明一个方法，其中类型<code>T</code>必须满足四个条件：
+<ol>
+<li>
+	<code>T</code>必须是一个<a href="type-system-overview.html#type-definition">定义类型</a>；
+</li>
+<li>
+	<code>T</code>必须和此方法声明定义在同一个代码包中；
+</li>
+<li>
+	<code>T</code>不能是一个指针类型；
+</li>
+<li>
+	<code>T</code>不能是一个接口类型。接口类型将在<a href="interface.html">下一篇文章</a>中讲解。
+</li>
+</ol>
+
+<p>
+类型<code>T</code>和<code>*T</code>称为它们各自的方法的属主类型（receiver type）。
+类型<code>T</code>被称作为类型<code>T</code>和<code>*T</code>声明的所有方法的属主基类型（receiver base type）。
+</p>
+
+<p>
+注意：我们也可以为满足上列条件的类型<code>T</code>和<code>*T</code>的<a href="type-system-overview.html#type-alias">别名</a>声明方法。
+这样做的效果和直接为类型<code>T</code>和<code>*T</code>声明方法是一样的。
+</p>
+
+<p>
+如果我们为某个类型声明了一个方法，以后我们可以说此类型拥有此方法。
+</p>
+
+从上面列出的条件，我们得知我们不能为下列类型（显式地）声明方法：
+<ul>
+<li>
+	内置基本类型。比如<code>int</code>和<code>string</code>。
+	因为这些类型声明在内置<code>builtin</code>标准包中，而我们不能在标准包中声明方法。
+</li>
+<li>
+	接口类型。但是接口类型可以拥有方法。详见<a href="interface.html">下一篇文章</a>。
+</li>
+<li>
+	除了满足上面条件的形如<code>*T</code>的指针类型之外的无名组合类型。
+</li>
+</ul>
+
+<p>
+一个方法声明和一个函数声明很相似，但是比函数声明多了一个额外的参数声明部分。
+此额外的参数声明部分只能含有一个类型为此方法的属主类型的参数，此参数称为此方法声明的属主参数（receiver parameter）。
+此属主参数声明必须包裹在一对小括号<code>()</code>之中。
+此属主参数声明部分必须处于<code>func</code>关键字和方法名之间。
+</p>
+
+下面是一个方法声明的例子：
+<pre class="line-numbers"><code class="language-go">// Age和int是两个不同的类型。我们不能为int和*int
+// 类型声明方法，但是可以为Age和*Age类型声明方法。
+type Age int
+func (age Age) LargerThan(a Age) bool {
+	return age > a
+}
+func (age *Age) Increase() {
+	*age++
+}
+
+// 为自定义的函数类型FilterFunc声明方法。
+type FilterFunc func(in int) bool
+func (ff FilterFunc) Filte(in int) bool {
+	return ff(in)
+}
+
+// 为自定义的映射类型StringSet声明方法。
+type StringSet map[string]struct{}
+func (ss StringSet) Has(key string) bool {
+	_, present := ss[key]
+	return present
+}
+func (ss StringSet) Add(key string) {
+	ss[key] = struct{}{}
+}
+func (ss StringSet) Remove(key string) {
+	delete(ss, key)
+}
+
+// 为自定义的结构体类型Book和它的指针类型*Book声明方法。
+
+type Book struct {
+	pages int
+}
+
+func (b Book) Pages() int {
+	return b.pages
+}
+
+func (b *Book) SetPages(pages int) {
+	b.pages = pages
+}
+</code></pre>
+
+<p>
+从上面的例子可以看出，我们可以为各种种类（kind）的类型声明方法，而不仅仅是结构体类型。
+</p>
+
+<p>
+在很多其它面向对象的编程语言中，属主参数名总是为隐式声明的<code>this</code>或者<code>self</code>。这样的名称不推荐在Go编程中使用。
+</p>
+
+<p>
+指针类型的属主参数称为<b><i>指针类型属主</i></b>，非指针类型的属主参数称为<b><i>值类型属主</i></b>。
+在大多数情况下，我个人非常反对将<b><i>指针</i></b>和<b><i>值</i></b>这两个术语用做对立面，但是在这里，我并不反对这么用，原因将在下面谈及。
+</p>
+</div>
+
+<p>
+方法名可以是空标识符<code>_</code>。一个类型可以拥有若干名可以是空标识符的方法，但是这些方法无法被调用。
+只有导出的方法才可以在其它代码包中调用。
+方法调用将在后面的一节中介绍。
+</p>
+
+<a class="anchor" id="method-as-function"></a>
+<h3>每个方法对应着一个隐式声明的函数</h3>
+
+<div>
+对每个方法声明，编译器将自动隐式声明一个相对应的函数。
+比如对于上一节的例子中为类型<code>Book</code>和<code>*Book</code>声明的两个方法，编译器将自动声明下面的两个函数：
+
+<pre class="line-numbers"><code class="language-go">func Book.Pages(b Book) int {
+	return b.pages // 此函数体和Book类型的Pages方法体一样
+}
+
+func (*Book).SetPages(b *Book, pages int) {
+	b.pages = pages // 此函数体和*Book类型的SetPages方法体一样
+}
+</code></pre>
+
+<p>
+在上面的两个隐式函数声明中，它们各自对应的方法声明的属主参数声明被插入到了普通参数声明的第一位。
+它们的函数体和各自对应的显式方法的方法体是一样的。
+</p>
+
+两个隐式函数名<code>Book.Pages</code>和<code>(*Book).SetPages</code>都是<code>aType.MethodName</code>这种形式的。
+我们不能显式声明名称为这种形式的函数，因为这种形式中的函数名不属于合法标识符。这样的函数只能由编译器隐式声明。
+但是我们可以在代码中调用这些隐式声明的函数：
+
+<pre class="line-numbers"><code class="language-go">package main
+
+import "fmt"
+
+type Book struct {
+	pages int
+}
+
+func (b Book) Pages() int {
+	return b.pages
+}
+
+func (b *Book) SetPages(pages int) {
+	b.pages = pages
+}
+
+func main() {
+	var book Book
+	// 调用这两个隐式声明的函数。
+	(*Book).SetPages(&book, 123)
+	fmt.Println(Book.Pages(book)) // 123
+}
+</code></pre>
+
+<p>
+</p>
+
+事实上，在隐式声明上述两个函数的同时，编译器也将改写这两个函数对应的显式方法（至少，我们可以这样认为），让这两个方法在体内直接调用这两个隐式函数：
+
+<pre class="line-numbers"><code class="language-go">func (b Book) Pages() int {
+	return Book.Pages(b)
+}
+
+func (b *Book) SetPages(pages int) {
+	(*Book).SetPages(b, pages)
+}
+</code></pre>
+
+<p>
+</p>
+
+</div>
+
+<a class="anchor" id="implicit-pointer-methods"></a>
+<h3>为指针类型属主隐式声明的方法</h3>
+
+<div>
+对每一个为值类型属主<code>T</code>声明的方法，一个相应的同名方法将自动隐式地为其对应的指针类型属主<code>*T</code>而声明。
+以上面的为类型<code>Book</code>声明的<code>Pages</code>方法为例，一个同名方法将自动为类型<code>*Book</code>而声明：
+
+<pre class="line-numbers"><code class="language-go">// 注意：这不是合法的Go语法。这里这样表示只是
+// 为了解释目的。它表明表达式(&aBook).Pages
+// 将被估值为aBook.Pages（见随后几节）。
+func (b *Book) Pages = (*b).Pages
+</code></pre>
+
+<p>
+正因为如此，我并不排斥使用值类型属主这个术语做为指针类型属主这个术语的对立面。
+毕竟，当我们为一个非指针类型显式声明一个方法的时候，事实上两个方法被声明了。
+一个方法是为非指针类型显式声明的，另一个是为指针类型隐式声明的。
+</p>
+
+上一节已经提到了，每一个方法对应着一个编译器隐式声明的函数。
+所以对于刚提到的隐式方法，编译器也将隐式声明一个相应的函数：
+
+<pre class="line-numbers"><code class="language-go">func (*Book).Pages(b *Book) int {
+	return Book.Pages(*b)
+}
+</code></pre>
+
+<p>
+换句话说，对于每一个为值类型属主显式声明的方法，同时将有一个隐式方法和两个隐式函数被自动声明。
+</p>
+</div>
+
+<a class="anchor" id="method-set"></a>
+<h3>方法描述（method specification）和方法集（method set）</h3>
+
+<div>
+
+<p>
+一个方法描述可以看作是一个不带<code>func</code>关键字的<a href="function.html#prototype">函数原型</a>。
+我们可以把每个方法声明看作是由一个<code>func</code>关键字、一个属主参数声明部分、一个方法描述和一个方法体组成。
+</p>
+
+比如，上面的例子中的<code>Pages</code>和<code>SetPages</code>的描述如下：
+
+<pre class="line-numbers"><code class="language-go">Pages() int
+SetPages(pages int)
+</code></pre>
+
+<p>
+</p>
+
+<p>
+每个类型都有个方法集。一个非接口类型的方法集由所有为它声明的（不管是显式的还是隐式的，但不包含方法名为空标识符的）方法的描述组成。
+接口类型将在<a href="interface.html">下一篇文章</a>详述。
+</p>
+
+比如，在上面的例子中，<code>Book</code>类型的方法集为：
+<pre class="line-numbers"><code class="language-go">Pages() int
+</code></pre>
+
+而<code>*Book</code>类型的方法集为：
+
+<pre class="line-numbers"><code class="language-go">Pages() int
+SetPages(pages int)
+</code></pre>
+
+<p>
+</p>
+
+<p>
+方法集中的方法描述的次序并不重要。
+</p>
+
+<p>
+对于一个方法集，如果其中的每个方法描述都处于另一个方法集中，则我们说前者方法集为后者（即另一个）方法集的子集，后者为前者的超集。
+如果两个方法集互为子集（或超集），则这两个方法集必等价。
+</p>
+
+<p>
+给定一个类型<code>T</code>，假设它既不是一个指针类型也不是一个接口类型，因为上一节中提到的原因，类型<code>T</code>的方法集总是类型<code>*T</code>的方法集的子集。
+比如，在上面的例子中，<code>Book</code>类型的方法集为<code>*Book</code>类型的方法集的子集。
+</p>
+
+<p>
+请注意：<b>不同代码包中的同名非导出方法将总被认为是不同名的。</b>
+</p>
+
+<p>
+方法集在Go中的多态特性中扮演着重要的角色。多态将在<a href="interface.html">下一篇文章</a>中讲解。
+</p>
+
+下列类型的方法集总为空：
+<ul>
+<li>内置基本类型；</li>
+<li>定义的指针类型；</li>
+<li>基类型为指针类型或者接口类型的指针类型；</li>
+<li>无名数组/切片/映射/函数/通道类型。</li>
+</ul>
+
+<p>
+</p>
+
+</div>
+
+<a class="anchor" id="call"></a>
+<h3>方法值和方法调用</h3>
+
+<p>
+方法事实上是特殊的函数。方法也常被称为成员函数。
+当一个类型拥有一个方法，则此类型的每个值将拥有一个不可修改的函数类型的成员（类似于结构体的字段）。
+此成员的名称为此方法名，它的类型和此方法的声明中不包括属主部分的函数声明的类型一致。
+一个值的成员函数也可以称为此值的方法。
+</p>
+
+<p>
+一个方法调用其实是调用了一个值的成员函数。假设一个值<code>v</code>有一个名为<code>m</code>的方法，则此方法可以用选择器语法形式<code>v.m</code>来表示。
+</p>
+
+<div>
+下面这个例子展示了如何调用为<code>Book</code>和<code>*Book</code>类型声明的方法：
+<pre class="line-numbers"><code class="language-go">package main
+
+import "fmt"
+
+type Book struct {
+	pages int
+}
+
+func (b Book) Pages() int {
+	return b.pages
+}
+
+func (b *Book) SetPages(pages int) {
+	b.pages = pages
+}
+
+func main() {
+	var book Book
+
+	fmt.Printf("%T \n", book.Pages)       // func() int
+	fmt.Printf("%T \n", (&book).SetPages) // func(int)
+	// &book值有一个隐式方法Pages。
+	fmt.Printf("%T \n", (&book).Pages)    // func() int
+
+	// 调用这三个方法。
+	(&book).SetPages(123)
+	book.SetPages(123)           // 等价于上一行
+	fmt.Println(book.Pages())    // 123
+	fmt.Println((&book).Pages()) // 123
+}
+</code></pre>
+
+<p>
+<!--
+In the above example, the value <code>book</code> is called the base value of both
+the receiver arguments of the <code>Pages</code> and <code>SetPages</code> method calls.
+-->
+</p>
+
+<p><i>
+（和C语言不同，Go中没有<code>-&gt;</code>操作符用来通过指针属主值来调用方法。<code>(&amp;book)-&gt;SetPages(123)</code>在Go中是非法的。）
+</i></p>
+
+<p>
+等一下，上例中的<code>(&amp;book).SetPages(123)</code>一行为什么可以被简化为<code>book.SetPages(123)</code>呢？
+毕竟，类型<code>Book</code>并不拥有一个<code>SetPages</code>方法。
+啊哈，这可以看作是Go中为了让代码看上去更简洁而特别设计的语法糖。此语法糖只对可寻址的值类型的属主有效。
+编译器会隐式地将<code>book.SetPages(123)</code>改写为<code>(&amp;book).SetPages(123)</code>。
+但另一方面，我们应该总是认为<code>aBookExpression.SetPages</code>是一个合法的选择器（从语法层面讲），即使表达式<code>aBookExpression</code>被估值为一个不可寻址的<code>Book</code>值（在这种情况下，<code>aBookExpression.SetPages</code>是一个无效但合法的选择器）。
+</p>
+
+<!--
+<pre class="line-numbers"><code class="language-go"> ...
+
+// Function results are not addressable in Go.
+func MakeBook() Book {
+	return Book{}
+}
+
+func main() {
+	var book Book
+	book.SetPages(123) // <=> (&book).SetPages(123)
+	fmt.Println(book.Pages()) // 123
+
+	// error: function return results are not addressable.
+	MakeBook().SetPages(123)
+}
+</code></pre>
+-->
+
+<!--
+In fact, the method value <code>book.Pages</code>
+can be viewed as a closure returned by:
+<pre class="line-numbers"><code class="language-go">func() func() int {
+	return func() int {
+		Book.Pages(b)
+	}
+}(book)
+</code></pre>
+
+and the method value <code>(&book).SetPages</code>
+can be viewed as closures returned by:
+<pre class="line-numbers"><code class="language-go">func (b *Book) func(int) {
+	return func(pages int) {
+		(*Book).SetPages(b, pages)
+	}
+}(&book)
+</code></pre>
+-->
+
+<p>
+如上面刚提到的，当为一个类型声明了一个方法后，每个此类型的值将拥有一个和此方法同名的成员函数。
+此类型的零值也不例外，不论此类型的零值是否用<code>nil</code>来表示。
+</p>
+
+一个例子：
+<pre class="line-numbers"><code class="language-go">package main
+
+type StringSet map[string]struct{}
+func (ss StringSet) Has(key string) bool {
+	_, present := ss[key] // 永不会产生恐慌，即使ss为nil。
+	return present
+}
+
+type Age int
+func (age *Age) IsNil() bool {
+	return age == nil
+}
+func (age *Age) Increase() {
+	*age++ // 如果age是一个空指针，则此行将产生一个恐慌。
+}
+
+func main() {
+	_ = (StringSet(nil)).Has   // 不会产生恐慌
+	_ = ((*Age)(nil)).IsNil    // 不会产生恐慌
+	_ = ((*Age)(nil)).Increase // 不会产生恐慌
+
+	_ = (StringSet(nil)).Has("key") // 不会产生恐慌
+	_ = ((*Age)(nil)).IsNil()       // 不会产生恐慌
+
+	// 下面这行将产生一个恐慌，但是此恐慌不是在调用方法的时
+	// 候产生的，而是在此方法体内解引用空指针的时候产生的。
+	((*Age)(nil)).Increase()
+}
+</code></pre>
+</div>
+
+<h3>属主参数的传参是一个值复制过程</h3>
+
+<p>
+和普通参数传参一样，属主参数的传参也是一个值复制过程。
+所以，在方法体内对属主参数的<a href="value-part.html">直接部分</a>的修改将不会反映到方法体外。
+</p>
+
+<div>
+一个例子：
+<pre class="line-numbers"><code class="language-go">package main
+
+import "fmt"
+
+type Book struct {
+	pages int
+}
+
+func (b Book) SetPages(pages int) {
+	b.pages = pages
+}
+
+func main() {
+	var b Book
+	b.SetPages(123)
+	fmt.Println(b.pages) // 0
+}
+</code></pre>
+
+<p>
+</p>
+
+另一个例子：
+<pre class="line-numbers"><code class="language-go">package main
+
+import "fmt"
+
+type Book struct {
+	pages int
+}
+
+type Books []Book
+
+func (books Books) Modify() {
+	// 对属主参数的间接部分的修改将反映到方法之外。
+	books[0].pages = 500
+	// 对属主参数的直接部分的修改不会反映到方法之外。
+	books = append(books, Book{789})
+}
+
+func main() {
+	var books = Books{{123}, {456}}
+	books.Modify()
+	fmt.Println(books) // [{500} {456}]
+}
+</code></pre>
+
+<p>
+</p>
+
+有点题外话，如果将上例中<code>Modify</code>方法中的两行代码次序调换，那么此方法中的两处修改都不能反映到此方法之外。
+<pre class="line-numbers"><code class="language-go">func (books Books) Modify() {
+	books = append(books, Book{789})
+	books[0].pages = 500
+}
+
+func main() {
+	var books = Books{{123}, {456}}
+	books.Modify()
+	fmt.Println(books) // [{123} {456}]
+}
+</code></pre>
+
+<p>
+这两处修改都不能反映到<code>Modify</code>方法之外的原因是<code>append</code>函数调用将开辟一块新的内存来存储它返回的结果切片的元素。
+而此结果切片的前两个元素是属主参数切片的元素的副本。对此副本所做的修改不会反映到<code>Modify</code>方法之外。
+</p>
+
+为了将此两处修改反映到<code>Modify</code>方法之外，<code>Modify</code>方法的属主类型应该改为指针类型：
+<pre class="line-numbers"><code class="language-go">func (books *Books) Modify() {
+	*books = append(*books, Book{789})
+	(*books)[0].pages = 500
+}
+
+func main() {
+	var books = Books{{123}, {456}}
+	books.Modify()
+	fmt.Println(books) // [{500} {456} {789}]
+}
+</code></pre>
+</div>
+
+
+
+<a class="anchor" id="method-value-normnalization"></a>
+<h3>方法值的正规化</h3>
+
+<div>
+
+<p>
+在编译阶段，编译器将正规化各个方法值表达式。简而言之，正规化就是将方法值表达式中的隐式取地址和解引用操作均转换为显式操作。
+</p>
+
+假设值<code>v</code>的类型为<code>T</code>，并且<code>v.m</code>是一个合法的方法值表达式，
+<ul>
+<li>
+	如果<code>m</code>是一个为类型<code>*T</code>显式声明的方法，那么编译器将把它正规化<code>(&amp;v).m</code>；
+</li>
+<li>
+	如果<code>m</code>是一个为类型<code>T</code>显式声明的方法，那么<code>v.m</code>已经是一个正规化的方法值表达式。
+</li>
+</ul>
+
+假设值<code>p</code>的类型为<code>*T</code>，并且<code>p.m</code>是一个合法的方法值表达式，
+<ul>
+<li>
+	如果<code>m</code>是一个为类型<code>T</code>显式声明的方法，那么编译器将把它正规化<code>(*p).m</code>；
+</li>
+<li>
+	如果<code>m</code>是一个为类型<code>*T</code>显式声明的方法，那么<code>p.m</code>已经是一个正规化的方法值表达式。
+</li>
+</ul>
+
+<p>
+提升方法值的正规化将在随后的<a href="type-embedding.html#method-value-evaluation">类型内嵌</a>一文中解释。
+</p>
+
+</div>
+
+<a class="anchor" id="method-value-evaluation"></a>
+<h3>方法值的估值</h3>
+
+<div>
+
+<p>
+假设<code>v.m</code>是一个已经正规化的方法值表达式，在运行时刻，当<code>v.m</code>被估值的时候，属主实参<code>v</code>的估值结果的一个副本将被存储下来以供后面调用此方法值的时候使用。
+</p>
+
+以下面的代码为例：
+<ul>
+<li>
+	<code>b.Pages</code>是一个已经正规化的方法值表达式。
+	在运行时刻对其进行估值时，属主实参<code>b</code>的一个副本将被存储下来。
+	此副本等于<code>b</code>的当前值：<code>Book{pages: 123}</code>，此后对<code>b</code>值的修改不影响此副本值。
+	这就是为什么调用<code>f1()</code>打印出<code>123</code>。
+</li>
+<li>
+	在编译时刻，方法值表达式<code>p.Pages</code>将被正规化为<code>(*p).Pages</code>。
+	在运行时刻，属主实参<code>*p</code>被估值为当前的<code>b</code>值，也就是<code>Book{pages: 123}</code>。
+	这就是为什么调用<code>f2()</code>也打印出<code>123</code>。
+</li>
+<li>
+	<code>p.Pages2</code>是一个已经正规化的方法值表达式。
+	在运行时刻对其进行估值时，属主实参<code>p</code>的一个副本将被存储下来，此副本的值为<code>b</code>值的地址。
+	当<code>b</code>被修改后，此修改可以通过对此地址值解引用而反映出来，这就是为什么调用<code>g1()</code>打印出<code>789</code>。
+</li>
+<li>
+	在编译时刻，方法值表达式<code>b.Pages2</code>将被正规化为<code>(&amp;b).Pages2</code>。
+	在运行时刻，属主实参<code>&amp;b</code>的估值结果的一个副本将被存储下来，此副本的值为<code>b</code>值的地址。
+	这就是为什么调用<code>g2()</code>也打印出<code>789</code>。
+</li>
+</ul>
+
+<pre class="line-numbers"><code class="language-go">package main
+
+import "fmt"
+
+type Book struct {
+	pages int
+}
+
+func (b Book) Pages() int {
+	return b.pages
+}
+
+func (b *Book) Pages2() int {
+	return (*b).Pages()
+}
+
+func main() {
+	var b = Book{pages: 123}
+	var p = &b
+	var f1 = b.Pages
+	var f2 = p.Pages
+	var g1 = p.Pages2
+	var g2 = b.Pages2
+	b.pages = 789
+	fmt.Println(f1()) // 123
+	fmt.Println(f2()) // 123
+	fmt.Println(g1()) // 789
+	fmt.Println(g2()) // 789
+}
+</code></pre>
+
+</div>
+
+<a class="anchor" id="method-obtaining"></a>
+<h3>一个定义类型不会获取为它的源类型显式声明的方法</h3>
+
+<div>
+
+举个例子，在下面的代码中，定义类型<code>Age</code>并不像它的源类型<code>MyInt</code>一样拥有一个<code>IsOdd</code>方法。
+
+<pre class="line-numbers"><code class="language-go">package main
+
+type MyInt int
+func (mi MyInt) IsOdd() bool {
+	return mi%2 == 1
+}
+
+type Age MyInt
+
+func main() {
+	var x MyInt = 3
+	_ = x.IsOdd() // okay
+	
+	var y Age = 36
+	// _ = y.IsOdd() // error: y.IsOdd undefined
+	_ = y
+}
+</code></pre>
+
+</div>
+
+<h3>如何决定一个方法声明使用值类型属主还是指针类型属主？</h3>
+
+<p>
+首先，从上一节中的例子，我们可以得知有时候我们必须在某些方法声明中使用指针类型属主。
+</p>
+
+<p>
+事实上，我们总可以在方法声明中使用指针类型属主而不会产生任何逻辑问题。
+我们仅仅是为了程序效率考虑有时候才会在函数声明中使用值类型属主。
+</p>
+
+<div>
+对于值类型属主还是指针类型属主都可以接受的方法声明，下面列出了一些考虑因素：
+<ul>
+<li>
+	太多的指针可能会增加垃圾回收器的负担。
+</li>
+<li>
+	如果一个值类型的尺寸太大，那么属主参数在传参的时候的复制成本将不可忽略。
+	指针类型都是小尺寸类型。
+	关于各种不同类型的尺寸，请阅读<a href="value-copy-cost.html">值复制代价</a>一文。
+</li>
+<li>
+	在并发场合下，同时调用值类型属主和指针类型属主方法比较易于产生数据竞争。
+</li>
+<li>
+	<code>sync</code>标准库包中的类型的值不应该被复制，所以如果一个结构体类型<a href="type-embedding.html">内嵌</a>了这些类型，则不应该为这个结构体类型声明值类型属主的方法。
+</li>
+</ul>
+</div>
+
+<p>
+如果实在拿不定主意在一个方法声明中应该使用值类型属主还是指针类型属主，那么请使用指针类型属主。
+</p>

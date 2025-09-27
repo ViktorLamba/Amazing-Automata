@@ -1,0 +1,242 @@
+﻿<h1>泛型</h1>
+
+<p>
+在Go 1.18以前，Go只支持内置泛型。
+从Go 1.18开始，Go也支持自定义泛型。
+本文只介绍内置泛型。
+</p>
+
+<p>
+Go通过各种一等公民组合类型来实现内置泛型。
+我们可以用各种一等公民组合类型来组合出无穷个类型。
+本文将展示一些自定义组合类型的例子并解释如何解读这些自定义类型。
+</p>
+
+<h3>一些复杂组合类型的例子</h3>
+
+<div>
+
+<p>
+Go中的组合类型字面表示设计得非常直观和易于解读。
+即使对于一些非常复杂的类型，我们也几乎不可能在解读它们的字面形式中迷失。
+下面将从简单到复杂列出一些自定义组合类型的例子并进行解读。
+</p>
+
+先看一个简单的例子：
+
+<pre class="line-numbers"><code class="language-go">[3][4]int
+</code></pre>
+
+<p>
+当解读一个类型的字面形式时，我们应该从左到右进行解读。
+左边开头的<code>[3]</code>表示着这个类型为一个数组类型，它右边的整个部分为它的元素类型。
+对于这个例子，它的元素类型为另外一个数组类型<code>[4]int</code>。
+此另外一个数组类型的元素类型为内置类型<code>int</code>。
+第一个数组类型可以被看作是一个二维数组类型。
+</p>
+
+一个使用此数组类型的例子：
+<pre class="line-numbers"><code class="language-go">package main
+
+import (
+	"fmt"
+)
+
+func main() {
+	matrix := [3][4]int{
+		{1, 0, 0, 1},
+		{0, 1, 0, 1},
+		{0, 0, 1, 1},
+	}
+
+	matrix[1][1] = 3
+	a := matrix[1] // 变量a的类型为[4]int
+	fmt.Println(a) // [0 3 0 1]
+}
+</code></pre>
+
+<p>
+</p>
+
+类似的，
+<ul>
+<li>
+	<code>[][]string</code>是一个元素类型为另一个切片类型<code>[]string</code>的切片类型。
+</li>
+<li>
+	<code>**bool</code>是一个基类型为另一个指针类型<code>*bool</code>的指针类型。
+</li>
+<li>
+	<code>chan chan int</code>是一个元素类型为另一个通道类型的<code>chan int</code>的通道类型。
+</li>
+<li>
+	<code>map[int]map[int]string</code>是一个元素类型为另一个映射类型<code>map[int]string</code>的映射类型。
+	这两个映射类型的键值类型均为内置类型<code>int</code>。
+</li>
+<li>
+	<code>func(int32) func(int32)</code>是一个只有一个输入参数和一个返回值的函数类型，此返回值的类型为一个只有一个输入参数的函数类型。
+	这两个函数类型的输入参数的类型均为内置类型<code>int32</code>。
+</li>
+</ul>
+
+<p>
+</p>
+
+下面是另一个自定义组合类型：
+
+<pre class="line-numbers"><code class="language-go">chan *[16]byte
+</code></pre>
+
+<p>
+最左边的<code>chan</code>关键字表明此类型是一个通道类型。
+<code>chan</code>关键字右边的整个部分<code>*[16]byte</code>表示此通道类型的元素类型，此元素类型是一个指针类型。
+此指针类型的基类型为<code>*</code>右边的整个部分：<code>[16]byte</code>，此基类型为一个数组类型。
+此数组类型的元素类型为内置类型<code>byte</code>。
+</p>
+
+一个使用此通道类型的例子：
+<pre class="line-numbers"><code class="language-go">package main
+
+import (
+	"fmt"
+	"time"
+	"crypto/rand"
+)
+
+func main() {
+	c := make(chan *[16]byte)
+
+	go func() {
+		// 使用两个数组以避免数据竞争。
+		var dataA, dataB = new([16]byte), new([16]byte)
+		for {
+			_, err := rand.Read(dataA[:])
+			if err != nil {
+				close(c)
+			} else {
+				c <- dataA
+				dataA, dataB = dataB, dataA
+			}
+		}
+	}()
+
+	for data := range c {
+		fmt.Println((*data)[:])
+		time.Sleep(time.Second / 2)
+	}
+}
+</code></pre>
+
+<p>
+</p>
+
+<p>
+类似的，类型<code>map[string][]func(int) int</code>为一个映射类型。
+此映射类型的键值类型为内置类型<code>string</code>，右边剩余的部分为此映射类型的元素类型。
+<code>[]</code>表明此映射的元素类型为一个切片类型，此切片类型的元素类型为一个函数类型<code>func(int) int</code>。
+</p>
+
+一个使用了此映射类型的例子：
+
+<pre class="line-numbers"><code class="language-go">package main
+
+import "fmt"
+
+func main() {
+	addone := func(x int) int {return x + 1}
+	square := func(x int) int {return x * x}
+	double := func(x int) int {return x + x}
+
+	transforms := map[string][]func(int) int {
+		"inc,inc,inc": {addone, addone, addone},
+		"sqr,inc,dbl": {square, addone, double},
+		"dbl,sqr,sqr": {double, double, square},
+	}
+
+	for _, n := range []int{2, 3, 5, 7} {
+		fmt.Println(">>>", n)
+		for name, transfers := range transforms {
+			result := n
+			for _, xfer := range transfers {
+				result = xfer(result)
+			}
+			fmt.Printf(" %v: %v \n", name, result)
+		}
+	}
+}
+</code></pre>
+
+<p>
+</p>
+
+下面是一个看上去有些复杂的类型：
+
+<pre class="line-numbers"><code class="language-go">[]map[struct {
+	a int
+	b struct {
+		x string
+		y bool
+	}
+}]interface {
+	Build([]byte, struct {x string; y bool}) error
+	Update(dt float64)
+	Destroy()
+}
+</code></pre>
+
+<p>
+让我们从左到右解读此类型。
+最左边开始的<code>[]</code>表明这是一个切片类型，紧跟着的<code>map</code>关键字表明此切片类型的元素为一个映射类型。
+<code>map</code>关键字后紧跟的一对方括号<code>[]</code>中的结构体类型字面形式表明此映射的键值类型为一个结构体类型。
+此中括号右边的整个部分表明此映射的元素类型为一个接口类型。此接口类型指定了三个方法。
+此映射的键值结构体类型有两个字段，第一个字段的名称和类型为<code>a</code>和内置类型<code>int</code>；
+第二个字段的名称为<code>b</code>，它的类型为另外一个结构体类型<code>struct {x string; y bool}</code>。
+此另外一个结构体类型也有两个字段：内置<code>string</code>类型的字段<code>x</code>和内置<code>bool</code>类型的字段<code>y</code>。
+</p>
+
+<p>
+请注意第二个结构体类型也被用做刚提及的接口类型所指定的其中一个方法中的其中一个参数类型。
+</p>
+
+
+我们经常将复杂类型的各个组成部分单独提前声明为一个类型名，从而获得更高的可读性。
+下面的代码中的类型别名<code>T</code>和上面刚解读的类型表示同一个类型。
+
+<pre class="line-numbers"><code class="language-go">type B = struct {
+	x string
+	y bool
+}
+
+type K = struct {
+	a int
+	b B
+}
+
+type E = interface {
+	Build([]byte, B) error
+	Update(dt float64)
+	Destroy()
+}
+
+type T = []map[K]E
+</code></pre>
+
+</div>
+
+<h3>内置泛型函数</h3>
+
+<p>
+Go中当前的内置泛型除了上述类型组合，还有一些支持泛型的内置函数。
+比如，内置函数<code>len</code>可以用来获取各种容器值的长度。
+<code>unsafe</code>标准库包中的函数也可以被看作是支持泛型的内置函数。
+这些函数在前面的各篇文章中已经一一介绍过了。
+</p>
+
+<h3>自定义泛型</h3>
+
+<p>
+从1.18版本开始，Go已经支持自定义泛型。
+请阅读<a href="https://gfw.go101.org/generics/101.html">《Go自定义泛型101》</a>一书来了解如何使用自定义泛型。
+</p>
+
+

@@ -1,0 +1,624 @@
+<h1>Go类型系统概述</h1>
+
+<p>
+本文将介绍Go中的各个类型种类。Go类型系统中的各种概念也将被介绍。如果不熟知这些概念，则很难精通Go编程。
+</p>
+
+<h3>概念：基本类型（basic type）</h3>
+
+<div>
+内置基本类型已经在前面的文章<a href="basic-types-and-value-literals.html">基本类型和它们的字面量表示</a>一文中介绍过了。
+为了本文的完整性，这些内置类型重新被列在这里：
+<ul>
+<li>内置字符串类型：<code>string</code>.</li>
+<li>内置布尔类型：<code>bool</code>.</li>
+<li>内置数值类型：
+	<ul>
+	<li><code>int8</code>、<code>uint8</code>（<code>byte</code>）、<code>int16</code>、<code>uint16</code>、<code>int32</code>（<code>rune</code>）、<code>uint32</code>、<code>int64</code>、<code>uint64</code>、<code>int</code>、<code>uint</code>、<code>uintptr</code>。</li>
+	<li><code>float32</code>、<code>float64</code>。</li>
+	<li><code>complex64</code>、<code>complex128</code>。</li>
+	</ul>
+</li>
+</ul>
+
+<p>
+注意，<code>byte</code>是<code>uint8</code>的一个内置别名，<code>rune</code>是<code>int32</code>的一个内置别名。
+下面将要提到如何声明自定义的类型别名。
+</p>
+
+<p>
+除了<a href="string.html">字符串类型</a>，《Go语言101》后续其它文章将不再对其它基本类型做详细讲解。
+</p>
+
+<p>
+这17个内置基本类型属于预声明类型（predeclared type）。
+</p>
+</div>
+
+<h3>概念：组合类型（composite type）</h3>
+
+<div>
+Go支持下列组合类型：
+<ul>
+<li><a href="pointer.html">指针类型</a> - 类C指针</li>
+<li><a href="struct.html">结构体类型</a> - 类C结构体</li>
+<li><a href="function.html">函数类型</a> - 函数类型在Go中是一种一等公民类别</li>
+<li><a href="container.html">容器类型</a>，包括:
+	<ul>
+	<li>数组类型 - 定长容器类型</li>
+	<li>切片类型 - 动态长度和容量容器类型</li>
+	<li>映射类型（map）- 也常称为字典类型。在标准编译器中映射是使用哈希表实现的。</li>
+	</ul>
+</li>
+<li><a href="channel.html">通道类型</a> - 通道用来同步并发的协程</li>
+<li><a href="interface.html">接口类型</a> - 接口在反射和多态中发挥着重要角色</li>
+</ul>
+</div>
+
+<div>
+无名组合类型可以用它们各自的字面表示形式来表示。
+下面是一些各种不同种类的无名组合类型字面表示形式的例子（具名和无名类型将在下面解释）：
+<pre class="line-numbers"><code class="language-go">// 假设T为任意一个类型，Tkey为一个支持比较的类型。
+
+*T         // 一个指针类型
+[5]T       // 一个元素类型为T、元素个数为5的数组类型
+[]T        // 一个元素类型为T的切片类型
+map[Tkey]T // 一个键值类型为Tkey、元素类型为T的映射类型
+
+// 一个结构体类型
+struct {
+	name string
+	age  int
+}
+
+// 一个函数类型
+func(int) (bool, string)
+
+// 一个接口类型
+interface {
+	Method0(string) int
+	Method1() (int, bool)
+}
+
+// 几个通道类型
+chan T
+chan<- T
+<-chan T
+</code></pre>
+
+<p>
+</p>
+
+<p>
+<a href="#types-not-support-comparison">支持和不支持比较的类型</a>将在下面介绍。
+</p>
+</div>
+
+<a class="anchor" id="type-kinds"></a>
+<h3>事实：类型的种类</h3>
+
+<p>
+每种上面提到的基本类型和组合类型都对应着一个类型种类（kind）。除了这些种类，今后将要介绍的非类型安全指针类型属于另外一个新的类型种类。
+</p>
+
+<p>
+所以，目前（Go 1.25），Go有26个类型种类。
+</p>
+
+<a class="anchor" id="type-definition"></a>
+<h3>语法：类型定义（type definition declaration）</h3>
+
+<p><i>
+（<b>类型定义</b>又称类型定义声明。在Go 1.9之前，类型定义被称为类型声明并且是唯一的一种类型声明形式。
+但是自从Go 1.9，类型定义变成了两种类型声明形式之一。另一种新的类型声明形式为后面的一节中将要介绍的类型别名声明。）
+</i></p>
+
+<div>
+在Go中，我们可以用如下形式来定义新的类型。在此语法中，<code>type</code>为一个关键字。
+
+<pre class="line-numbers"><code class="language-go">// 定义单个类型。
+type NewTypeName SourceType
+
+// 定义多个类型（将多个类型描述合并在一个声明中）。
+type (
+	NewTypeName1 SourceType1
+	NewTypeName2 SourceType2
+)
+</code></pre>
+
+<p>
+新的类型名必须为标识符。但是请注意：包级类型（以及下一节将要介绍的类型别名）的名称不能为<a href="packages-and-imports.html#init"><code>init</code></a>。
+</p>
+
+<p>
+上例中的第二个类型声明中包含两个类型描述（type specification）。
+如果一个类型声明包含多于一个的类型描述，这些类型描述必须用一对小括号<code>()</code>括起来。
+</p>
+
+<p>
+每个类型描述创建了一个全新的定义类型（defined type）。
+</p>
+
+<div>
+注意：
+<ul>
+<li>
+	一个新定义的类型和它的源类型为两个不同的类型。
+</li>
+<li>
+	在两个不同的类型定义中所定义的两个类型肯定是两个不同的类型。
+</li>
+<li>
+	一个新定义的类型和它的源类型的底层类型（将在下面介绍）一致并且它们的值可以相互显式转换。
+</li>
+<li>
+	类型定义可以出现在函数体内。
+</li>
+</ul>
+</div>
+
+一些类型定义的例子：
+
+<pre class="line-numbers"><code class="language-go">// 下面这些新定义的类型和它们的源类型都是基本类型。
+// 它们的源类型均为预声明类型。
+type (
+	MyInt int
+	Age   int
+	Text  string
+)
+
+// 下面这些新定义的类型和它们的源类型都是组合类型。
+// 它们的源类型均为无名类型（见下下节）。
+type IntPtr *int
+type Book struct{author, title string; pages int}
+type Convert func(in0 int, in1 bool)(out0 int, out1 string)
+type StringArray [5]string
+type StringSlice []string
+
+func f() {
+	// 这三个新定义的类型名称只能在此函数内使用。
+	type PersonAge map[string]int
+	type MessageQueue chan string
+	type Reader interface{Read([]byte) int}
+}
+</code></pre>
+
+<p>
+请注意：从Go 1.9到Go 1.17，Go白皮书曾经把预声明类型视为定义类型。
+但是从Go 1.18开始，Go白皮书明确说明预声明类型不再属于定义类型。
+</p>
+</div>
+
+<a class="anchor" id="generic-type"></a>
+<h3>概念：自定义泛型类型和实例化类型（generic type and instantiated types）</h3>
+
+<div>
+<p>
+从Go 1.18开始，Go开始支持自定义泛型类型（和函数）。
+一个泛型类型必须被实例化才能被用做值类型。
+</p>
+
+<p>
+一个泛型类型是一个定义类型；它的实例化类型为具名类型。具名类型将在下一节解释。
+</p>
+
+<p>
+自定义泛型中的另外两个重要的概念为类型约束（constarint）和类型参数（type parameter）。
+</p>
+
+<p>
+本书不详细阐述自定义泛型。关于如何声明和使用泛型类型和函数，请阅读<a href="https://gfw.go101.org/generics/101.html">《Go自定义泛型101》</a>。
+</p>
+
+</div>
+
+<a class="anchor" id="named-type"></a>
+<h3>概念：具名类型和无名类型（named type and unnamed type）</h3>
+
+<div>
+
+<p>
+在Go 1.9之前，<b>具名类型</b>这个术语在Go白皮书中是精确定义的。
+在那时，一个具名类型被定义为一个可以用标识符表示的类型。
+随着在Go 1.9中引入了自定义类型别名（见下一节），<b>具名类型</b>这个术语被从白皮书中删除了；取而代之的是<b>定义类型</b>。
+随着Go 1.18中引入了自定义泛型，<b>具名类型</b>这个术语又被重新加回到白皮书。
+</p>
+
+一个具名类型可能为
+
+<ul>
+<li>
+	一个预声明类型（不包括<a href="#type-alias">类型别名</a>）；
+</li>
+<li>
+	一个定义（非自定义泛型）类型；
+</li>
+<li>
+	一个（泛型类型的）实例化类型；
+</li>
+<li>
+	一个类型参数类型（使用在自定义泛型中）。
+</li>
+</ul>
+
+<p>
+其它类型称为无名类型。一个无名类型肯定是一个组合类型（反之则未必）。
+</p>
+
+</div>
+
+<a class="anchor" id="type-alias"></a>
+<h3>语法：类型别名声明（type alias declaration）</h3>
+
+<div>
+从Go 1.9开始，我们可以使用下面的语法来声明自定义类型别名。此语法和类型定义类似，但是请注意每个类型描述中多了一个等号<code>=</code>。
+
+<pre class="line-numbers"><code class="language-go">type (
+	Name = string
+	Age  = int
+)
+
+type table = map[string]int
+type Table = map[Name]Age
+</code></pre>
+
+<p>
+类型别名也必须为标识符。同样地，类型别名可以被声明在函数体内。
+</p>
+
+<div>
+在上面的类型别名声明的例子中，<code>Name</code>是内置类型<code>string</code>的一个别名，它们表示同一个类型。
+同样的关系对下面的几对类型表示也成立：
+<ul>
+<li>
+	别名<code>Age</code>和内置类型<code>int</code>。
+</li>
+<li>
+	别名<code>table</code>和映射类型<code>map[string]int</code>。
+</li>
+<li>
+	别名<code>Table</code>和映射类型<code>map[Name]Age</code>。
+</li>
+</ul>
+</div>
+
+<p>
+事实上，文字表示形式<code>map[string]int</code>和<code>map[Name]Age</code>也表示同一类型。
+所以，<code>table</code>和<code>Table</code>一样表示同一个类型。
+</p>
+
+<p>
+注意：尽管一个类型别名有一个名字，但是它可能表示一个无名类型。
+比如，<code>table</code>和<code>Table</code>这两个别名都表示同一个无名类型<code>map[string]int</code>。
+</p>
+
+</div>
+
+<a class="anchor" id="underlying-type"></a>
+<h3>概念：底层类型（underlying type）</h3>
+
+<div>
+在Go中，每个类型都有一个底层类型。规则：
+<ul>
+<li>一个内置类型的底层类型为它自己。</li>
+<li><code>unsafe</code>标准库包中定义的<code>Pointer</code>类型的底层类型是它自己。
+	（至少我们可以认为是这样。事实上，关于<code>unsafe.Pointer</code>类型的底层类型，官方文档中并没有清晰的说明。我们也可以认为<code>unsafe.Pointer</code>类型的底层类型为<code>*T</code>，其中<code>T</code>表示一个任意类型。）
+	<code>unsafe.Pointer</code>也被视为一个内置类型。</li>
+<li>一个无名类型（必为一个组合类型）的底层类型为它自己。</li>
+<li>在一个类型声明中，新声明的类型和源类型共享底层类型。</li>
+</ul>
+
+一个例子：
+<pre class="line-numbers"><code class="language-go">// 这四个类型的底层类型均为内置类型int。
+type (
+	MyInt int
+	Age   MyInt
+)
+
+// 下面这三个新声明的类型的底层类型各不相同。
+type (
+	IntSlice   []int   // 底层类型为[]int
+	MyIntSlice []MyInt // 底层类型为[]MyInt
+	AgeSlice   []Age   // 底层类型为[]Age
+)
+
+// 类型[]Age、Ages和AgeSlice的底层类型均为[]Age。
+type Ages AgeSlice
+</code></pre>
+
+<p>
+</p>
+
+如何溯源一个声明的类型的底层类型？规则很简单，在溯源过程中，当遇到一个内置类型或者无名类型时，溯源结束。
+以上面这几个声明的类型为例，下面是它们的底层类型的溯源过程：
+
+<pre>
+MyInt → int
+Age → MyInt → int
+IntSlice → []int
+MyIntSlice → []MyInt <span style="color:#aaa">→ <span style="text-decoration:line-through;">[]int</span></span>
+AgeSlice → []Age <span style="color:#aaa">→ <span style="text-decoration:line-through;">[]MyInt</span></span> <span style="color:#aaa">→ <span style="text-decoration:line-through;">[]int</span></span>
+Ages → AgeSlice → []Age <span style="color:#aaa">→ <span style="text-decoration:line-through;">[]MyInt</span></span> <span style="color:#aaa">→ <span style="text-decoration:line-through;">[]int</span></span>
+</pre>
+
+<p>
+
+</p>
+
+在Go中，
+<ul>
+<li>底层类型为内置类型<code>bool</code>的类型称为<b>布尔类型</b>；</li>
+<li>底层类型为任一内置整数类型的类型称为<b>整数类型</b>；</li>
+<li>底层类型为内置类型<code>float32</code>或者<code>float64</code>的类型称为<b>浮点数类型</b>；</li>
+<li>底层类型为内置类型<code>complex64</code>或<code>complex128</code>的类型称为<b>复数类型</b>；</li>
+<li>整数类型、浮点数类型和复数类型统称为<b>数字值类型</b>；</li>
+<li>底层类型为内置类型<code>string</code>的类型称为<b>字符串类型</b>。</li>
+</ul>
+</div>
+
+<p>
+底层类型这个概念在<a href="value-conversions-assignments-and-comparisons.html">类型转换、赋值和比较规则</a>中扮演着重要角色。
+</p>
+
+<h3>概念：值（value）</h3>
+
+<p>
+一个类型的一个实例称为此类型的一个值。一个类型可以有很多不同的值，其中一个为它的零值。
+同一类型的不同值共享很多相同的属性。
+</p>
+
+<p>
+每个类型有一个零值。一个类型的零值可以看作是此类型的默认值。
+预声明的标识符<code>nil</code>可以看作是切片、映射、函数、通道、指针（包括非类型安全指针）和接口类型的零值的字面量表示。
+我们以后可以在<a href="nil.html">Go中的nil</a>一文中了解到关于<code>nil</code>的各种事实。
+</p>
+
+<p>
+在源代码中，值可以呈现为若干种形式，包括<a href="basic-types-and-value-literals.html">字面量</a>、<a href="constants-and-variables.html#constant">具名常量</a>、<a href="constants-and-variables.html#variable">变量</a>和<a href="expressions-and-statements.html">表达式</a>。前三种形式可以看作是最后一种形式的特例。
+</p>
+
+<p>
+值分为<a href="constants-and-variables.html#untyped-value">类型确定的和类型不确定的</a>。
+</p>
+
+<p>
+基本类型和它们的字面量表示已经在<a href="basic-types-and-value-literals.html">前面一文</a>中介绍过了。
+另外，Go中还有另外两种的字面量表示形式：函数字面量表示形式和组合字面量表示形式（composite literal）。
+</p>
+
+<p>
+函数字面量表示形式用来表示函数值。事实上，一个<a href="function-declarations-and-calls.html#declaration">函数声明</a>是由一个标识符（函数名）和一个函数字面量表示形式组成。
+</p>
+
+<p>
+组合字面量表示形式用来表示结构体类型值和容器类型（数组、切片和映射）值。
+详见<a href="struct.html">结构体</a>和<a href="container.html">容器类型</a>两文。
+</p>
+
+<p>
+指针类型、通道类型和接口类型的值没有字面量表示形式。
+</p>
+
+<a class="anchor" id="value-part"></a>
+<h3>概念：值部（value part）</h3>
+
+<p>
+在运行时刻，很多值是存储在内存的。每个这样的值都有一个直接部分，但是有一些值还可能有一个或多个间接部分。每个值部分在内存中都占据一段连续空间。
+通过<a href="pointer.html">安全</a>或者<a href="unsafe.html">非安全</a>指针，一个值的间接部分被此值的直接部分所引用。
+</p>
+
+<p>
+<a href="value-part.html"><b>值部</b></a>这个术语并没有在Go白皮书中定义。它仅使用在《Go语言101》这本书中，用来简化一些解释并帮助Go程序员更好地理解Go类型和值。
+</p>
+
+<a class="anchor" id="value-size"></a>
+<h3>概念：值尺寸（value size）</h3>
+
+<p>
+一个值存储在内存中是要占据一定的空间的。此空间的大小称为此值的尺寸。值尺寸是用字节数来衡量的。
+在Go中，当我们谈及一个值的尺寸，如果没有特殊说明，我们一般是指此值的直接部分的尺寸。
+某个特定类别的所有类型的值的尺寸都是一样的。因为这个原因，我们也常将一个值的尺寸说成是它的类型的尺寸（或值尺寸）。
+</p>
+
+<p>
+我们可以用<code>unsafe</code>标准库包中的<code>Sizeof</code>函数来取得任何一个值的尺寸。
+</p>
+
+<p>
+Go白皮书没有规定非数值类型值的尺寸。对数值类型值的尺寸的要求已经在<a href="basic-types-and-value-literals.html">基本类型和它们的字面量表示</a>一文中提及了。
+</p>
+
+<a class="anchor" id="pointer-base-type"></a>
+<h3>概念：指针类型的基类型（base type）</h3>
+
+<p>
+如果一个指针类型的底层类型表示为<code>*T</code>，则此指针类型的基类型为<code>T</code>所表示的类型。
+</p>
+
+<p>
+<a href="pointer.html">指针类</a>一文详细解释了指针类类型和指针值。
+</p>
+
+<h3>概念：结构体类型的字段（field）</h3>
+
+<div>
+一个结构体类型由若干成员变量组成。每个这样的成员变量称为此结构体的一个字段。
+比如，下面这个结构体类型含有三个字段：<code>author</code>、<code>title</code>和<code>pages</code>。
+
+<pre class="line-numbers"><code class="language-go">struct {
+	author string
+	title  string
+	pages  int
+}
+</code></pre>
+</div>
+
+<p>
+<a href="struct.html">结构体</a>一文详细解释了结构体类型和结构体值。
+</p>
+
+<h3>概念：函数类型的签名（signature）</h3>
+
+<p>
+一个函数和其类型的签名由此函数的输入参数和返回结果的类型列表组成。
+函数名称和函数体不属于函数签名的构成部分。
+</p>
+
+<p>
+<a href="function.html">函数</a>一文详细解释了函数类型和函数值。
+</p>
+
+<h3>概念：类型的方法（method）和方法集（method set）</h3>
+
+<p>
+在Go中，我们可以给满足某些条件的类型声明<a href="method.html">方法</a>。方法也常被称为成员函数。
+一个类型的所有方法组成了此类型的方法集。
+</p>
+
+<h3>概念：接口类型的动态类型和动态值</h3>
+
+<p>
+接口类型的值称为接口值。一个接口值可以包裹装载一个非接口值。包裹在一个接口值中的非接口值称为此接口值的动态值。此动态值的类型称为此接口值的动态类型。
+一个什么也没包裹的接口值为一个零值接口值。零值接口值的动态值和动态类型均为不存在。
+</p>
+
+<p>
+一个接口类型可以指定若干个（可以是零个）方法，这些方法形成了此接口类型的方法集。
+</p>
+
+<p>
+如果一个类型（可以是接口或者非接口类型）的方法集是一个接口类型的方法集的超集，则我们说此类型<a href="interface.html#implementation">实现</a>了此接口类型。
+</p>
+
+<p>
+<a href="interface.html">接口</a>一文详细解释了接口类型和接口值。
+</p>
+
+<a class="anchor" id="concrete-type"></a>
+<h3>概念：一个值的具体类型（concrete type）和具体值（concrete value）</h3>
+
+<p>
+对于一个（类型确定的）非接口值，它的具体类型就是它的类型，它的具体值就是它自己。
+</p>
+
+<p>
+一个零值接口值没有具体类型和具体值。
+对于一个非零值接口值，它的具体类型和具体值就是它的动态类型和动态值。
+</p>
+
+<h3>概念：容器类型</h3>
+
+<p>
+数组、切片和映射是Go中的三种正式意义上的内置容器类型。
+</p>
+
+<p>
+有时候，字符串和通道类型也可以被非正式地看作是容器类型。
+</p>
+
+<p>
+（正式和非正式的）容器类型的每个值都有一个长度属性。
+</p>
+
+<p>
+<a href="container.html">数组、切片和映射</a>一文详细解释了各种正式容器类型和它们的值。
+</p>
+
+<h3>概念：映射类型的键值（key）类型</h3>
+
+<p>
+如果一个映射类型的底层类型表示为<code>map[Tkey]T</code>，则此映射类型的键值类型为<code>Tkey</code>。
+<code>Tkey</code>必须为一个可比较类型（见下）。
+</p>
+
+<h3>概念：容器类型的元素（element）类型</h3>
+
+<div>
+存储在一个容器值中的所有元素的类型必须为同一个类型。此同一类型称为此容器值的（容器）类型的元素类型。
+<ul>
+<li>如果一个数组类型的底层类型表示为<code>[N]T</code>，则此数组类型的元素类型为<code>T</code>所表示的类型。</li>
+<li>如果一个切片类型的底层类型表示为<code>[]T</code>，则此切片类型的元素类型为<code>T</code>所表示的类型。</li>
+<li>如果一个映射类型的底层类型表示为<code>map[Tkey]T</code>，则此映射类型的元素类型为<code>T</code>所表示的类型。</li>
+<li>如果一个通道类型的底层类型表示为<code>chan T</code>、<code>chan&lt;- T</code>或者<code>&lt;-chan T</code>，则此通道类型的元素类型为<code>T</code>所表示的类型。</li>
+<li>一个字符串类型的元素类型总是内置类型<code>byte</code>（亦即<code>uint8</code>）。</li>
+</ul>
+</div>
+
+<h3>概念：通道类型的方向</h3>
+
+<div>
+一个通道值可以被看作是先入先出（first-in-first-out，FIFO）队列。一个通道值可能是可读可写的、只读的（receive-only）或者只写的（send-only）。
+<ul>
+<li>
+	一个可读可写的通道值也称为一个双向通道。
+	一个双向通道类型的底层类型可以被表示为<code>chan T</code>。
+</li>
+<li>
+	我们只能向一个只写的通道值发送数据，而不能从其中接收数据。
+	只写通道类型的底层类型可以被表示为<code>chan&lt;- T</code>。
+</li>
+<li>
+	我们只能从一个只读的通道值接收数据，而不能向其发送数据。
+	只读通道类型的底层类型可以被表示为<code>&lt;-chan T</code>。
+</li>
+</ul>
+</div>
+
+<p>
+<a href="channel.html">通道</a>一文详细解释了通道类型和通道值。
+</p>
+
+<a class="anchor" id="types-not-support-comparison"></a>
+<h3>事实：可比较类型和不可比较类型</h3>
+
+<div>
+目前（Go 1.25），下面这些类型的值不支持（使用<code>==</code>和<code>!=</code>运算标识符）比较。这些类型称为不可比较类型。
+<ul>
+<li>切片类型</li>
+<li>映射类型</li>
+<li>函数类型</li>
+<li>
+任何包含有不可比较类型的字段的结构体类型和任何元素类型为不可比较类型的数组类型。
+</li>
+</ul>
+
+<p>
+其它类型称为可比较类型。
+</p>
+
+<p>
+映射类型的键值类型必须为可比较类型。
+</p>
+
+<p>
+我们可以在<a href="value-conversions-assignments-and-comparisons.html#comparison-rules">类型转换、赋值和值比较规则大全</a>一文中了解到更详细的比较规则。
+</p>
+</div>
+
+<h3>事实：Go对面向对象编程（object-oriented programming）的支持</h3>
+
+<div>
+Go并不全面支持面向对象编程，但是Go确实支持一些面向对象编程的元素。请阅读以下几篇文章以获取详细信息：
+<ul>
+<li>
+	<a href="method.html">方法</a>
+</li>
+<li>
+	<a href="interface.html#implementation">实现</a>
+</li>
+<li>
+	<a href="type-embedding.html">类型内嵌</a>
+</li>
+</ul>
+</div>
+
+<h3>事实：Go对泛型（generics）的支持</h3>
+
+<p>
+在1.18版本以前，Go中泛型支持只局限在内置类型和内置函数中。
+从1.18版本开始，Go也支持自定义泛型。
+请阅读<a href="generic.html">泛型</a>一文来了解内置泛型和<a href="https://gfw.go101.org/generics/101.html">《Go自定义泛型101》</a>一书来了解自定义泛型。
+</p>
+
+
+
