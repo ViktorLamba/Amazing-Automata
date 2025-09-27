@@ -124,4 +124,13 @@ if [ -n "$DB_CONTAINER" ]; then
     docker rm -f "$DB_CONTAINER"
 fi
 
+find . -type f -name "manifest.json" | while read -r file; do
+  database_value=$(jq -r '.database' "$file" 2>/dev/null)
+  
+  # Проверяем значение
+  if [ "$database_value" = "mysql" ] || [ "$database_value" = "postgres" ]; then
+    echo "❌ ОШИБКА! База данных не будет в конечном деплое"
+  fi
+done
+
 echo "✅ Build finished. Image: $IMAGE_NAME"

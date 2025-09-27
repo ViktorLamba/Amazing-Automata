@@ -168,7 +168,7 @@ if [ -z "$start_cmd" ] && [ -n "$entry" ]; then
   log "Guessed start_cmd='$start_cmd'"
 fi
 
-# --- 8) Detect database (improved) ---
+# # --- 8) Detect database (improved) ---
 if [ -z "$database" ] || [ "$database" = "null" ]; then
   DB_SEARCH_FILES=$(find "$PROJECT_DIR" -type f \( -name "*.py" -o -name "*.env" -o -name "settings.py" -o -name "config.*" -o -name "*.php" -o -name "*.yml" -o -name "*.yaml" \))
 
