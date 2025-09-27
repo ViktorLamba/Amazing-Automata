@@ -1,5 +1,5 @@
-### Amazing Automata 🚀
-# Универсальная система автоматической сборки и доставки приложений на различных языках программирования.
+# Amazing Automata 🚀
+### Универсальная система автоматической сборки и доставки приложений на различных языках программирования.
 
 ## 🌟 Особенности
 Умное определение языка и структуры проекта
@@ -14,7 +14,7 @@ Zero-config подход для стандартных проектов
 ____ 
 
 ## 📋 Поддерживаемые языки
-# 🦀 Rust
+### 🦀 Rust
 Обязательные файлы:
 
 Cargo.toml - зависимости и конфигурация
@@ -30,7 +30,7 @@ Workspace проекты (multiple binaries)
 Features и conditional compilation
 ____
 
-# 🐍 Python
+### 🐍 Python
 Обязательные файлы:
 
 pyproject.toml ИЛИ requirements.txt - зависимости
@@ -46,7 +46,7 @@ Package distributions (wheel, setuptools)
 ASGI/WSGI приложения
 ____
 
-# 🐹 Go
+### 🐹 Go
 Обязательные файлы:
 
 go.mod - модули и зависимости
@@ -62,7 +62,7 @@ Multi-arch сборка (amd64, arm64)
 Go modules и vendor directory
 ____
 
-# ⚡ C++
+### ⚡ C++
 Обязательные файлы:
 
 CMakeLists.txt ИЛИ Makefile - система сборки
@@ -77,13 +77,13 @@ Makefile (legacy)
 
 Autotools (configure/make)
 
-### 🚀 Быстрый старт
+# 🚀 Быстрый старт
 ## Установка
 $ git clone https://github.com/ViktorLamba/Amazing-Automata.git .
  
 
 
-### 🏗️ Структура проекта
+# 🏗️ Структура проекта
 
 Amazing-Automata/
 ├── ci/
@@ -95,20 +95,20 @@ Amazing-Automata/
 ├── .deployrc                 # Конфигурация развертывания
 └── README.md
 
-### 🙏 Благодарности
-# Разработано с ❤️ для сообщества разработчиков.
+# 🙏 Благодарности
+### Разработано с ❤️ для сообщества разработчиков.
 
 
-### ⭐️ Команда проекта
+# ⭐️ Команда проекта
 
-# Виктор Ламба
+### Виктор Ламба
 тгк - https://t.me/viiiii_tyok
 git - @ViktorLamba
 
-# Дмитрий Ефимов
+### Дмитрий Ефимов
 тгк - @PlumBum1538
 git - @DmitriyEfimov15
 
-# Андрей Падалко
+### Андрей Падалко
 тгк - @andrew09127
 git - @Andrew09127
