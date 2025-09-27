@@ -28,7 +28,7 @@ jobs:
             cd $SERVER_DIR
 
             # обновляем код
-            git pull origin main
+            git pull origin ci-out-project-test
 
             # билдим Docker образ из папки project/test
             docker build -t my-app:latest ./project/test
