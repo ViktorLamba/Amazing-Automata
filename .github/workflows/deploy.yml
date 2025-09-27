@@ -1,0 +1,36 @@
+name: CI/CD Docker App
+
+on:
+  push:
+    branches:
+      - ready-example
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Deploy and build on server
+        uses: appleboy/ssh-action@v0.1.5
+        with:
+          host: ${{ secrets.SERVER_HOST }}
+          username: ${{ secrets.SERVER_USER }}
+          key: ${{ secrets.SERVER_KEY }}
+          script: |
+            # Путь на сервере, куда клонируем репозиторий
+            PROJECT_DIR="/root/Amazing-Automata"
+
+            # Клонируем или обновляем
+            cd "$PROJECT_DIR" || git clone git@github.com:ViktorLamba/Amazing-Automata.git "$PROJECT_DIR"
+            cd "$PROJECT_DIR"
+            git pull origin ready-example
+
+            # Собираем образ через твой скрипт
+            bash ci/ci-scripts/build.sh project/manifest.json auto-project:latest true
+
+            # Перезапускаем контейнер
+            docker stop auto-project || true
+            docker rm auto-project || true
+            docker run -d --name auto-project -p 80:3000 auto-project:latest

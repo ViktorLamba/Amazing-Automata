@@ -1,14 +1,17 @@
 {
   "language": "unknown",
   "build_tool": "unknown",
-  "entry": "src/main.py",
-  "start_cmd": "python src/main.py",
+  "entry": "unknown",
+  "start_cmd": "unknown",
   "build_cmd": "",
+  "database": "unknown",
   "test_cmd": "",
+  "deps_file": "",
   "has_dockerfile": false,
   "is_mobile": false,
   "artifacts": [],
   "targets": [
     "linux/amd64"
   ]
+  
 }
