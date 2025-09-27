@@ -31,6 +31,6 @@ jobs:
             bash ci/ci-scripts/build.sh project/manifest.json auto-project:latest true
 
             # Перезапускаем контейнер
-            docker stop my-app || true
-            docker rm my-app || true
-            docker run -d --name my-app -p 80:3000 auto-project:latest
+            docker stop auto-project || true
+            docker rm auto-project || true
+            docker run -d --name auto-project -p 80:3000 auto-project:latest
