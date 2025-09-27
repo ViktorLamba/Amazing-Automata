@@ -28,9 +28,9 @@ jobs:
             git pull origin ci-out-project-test
 
             # Собираем образ через твой скрипт
-            bash ci/ci-scripts/build.sh project/manifest.json my-app:latest true
+            bash ci/ci-scripts/build.sh project/manifest.json auto-project:latest true
 
             # Перезапускаем контейнер
             docker stop my-app || true
             docker rm my-app || true
-            docker run -d --name my-app -p 80:3000 my-app:latest
+            docker run -d --name my-app -p 80:3000 auto-project:latest
