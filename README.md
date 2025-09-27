@@ -6,7 +6,7 @@
 
 Автоматическая настройка пайплайнов сборки
 
-Multi-платформенная поддержка (Docker, Kubernetes, Cloud)
+Multi-платформенная поддержка (Docker)
 
 Zero-config подход для стандартных проектов
 
@@ -21,14 +21,6 @@ ____
 pyproject.toml ИЛИ requirements.txt - зависимости
 
 main.py/любой .py файл - точка входа
-
-Поддерживает:
-
-Virtual environments (venv, poetry, pipenv)
-
-Package distributions (wheel, setuptools)
-
-ASGI/WSGI приложения
 ____
 
 ### 🐹 Go
