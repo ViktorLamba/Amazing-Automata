@@ -83,7 +83,6 @@ RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -o /out/app ./...
 
 FROM alpine:3.18
 COPY --from=build /out/app /usr/local/bin/app
-USER appuser
 ENTRYPOINT ["/usr/local/bin/app"]
 EOF
       ;;
